@@ -1,25 +1,25 @@
-// GET /api/invoices?divisionId=<optional>
-// POST /api/invoices  { clientId, amount, dueInDays }
+// GET /api/settings/team
+// POST /api/settings/team  { name, email, role }
+// PATCH /api/settings/team { userId, role }
 const { withErrorHandling, readBody, json, methodNotAllowed } = require("../_lib/http");
 const db = require("../_lib/supabase");
 
 module.exports = withErrorHandling(async (req, res) => {
   if (req.method === "GET") {
-    const invoices = await db.select("invoices", { select: "*,clients(name,division_id)", order: "created_at.desc" });
-    return json(res, 200, { invoices });
+    const users = await db.select("users", { order: "created_at.asc" });
+    return json(res, 200, { users });
   }
   if (req.method === "POST") {
-    const b = readBody(req);
-    if (!b.clientId || !b.amount) return json(res, 400, { error: "clientId and amount are required" });
-    const due = new Date();
-    due.setDate(due.getDate() + (b.dueInDays || 30));
-    const [invoice] = await db.insert("invoices", [{
-      client_id: b.clientId,
-      amount: b.amount,
-      status: "Draft",
-      due_date: due.toISOString(),
-    }]);
-    return json(res, 200, { invoice });
+    const { name, email, role } = readBody(req);
+    if (!name || !email) return json(res, 400, { error: "name and email are required" });
+    const [user] = await db.insert("users", [{ name, email, role: role || "RESEARCHER" }]);
+    return json(res, 200, { user });
   }
-  methodNotAllowed(res, ["GET", "POST"]);
+  if (req.method === "PATCH") {
+    const { userId, role } = readBody(req);
+    if (!userId || !["SUPER_ADMIN", "SALES", "RESEARCHER"].includes(role)) return json(res, 400, { error: "userId and a valid role are required" });
+    const [user] = await db.update("users", `id=eq.${userId}`, { role });
+    return json(res, 200, { user });
+  }
+  methodNotAllowed(res, ["GET", "POST", "PATCH"]);
 });

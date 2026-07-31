@@ -1,16 +1,25 @@
-// GET /api/leads/list?divisionId=<uuid optional>
-const { withErrorHandling, json, methodNotAllowed } = require("../_lib/http");
+// GET /api/invoices?divisionId=<optional>
+// POST /api/invoices  { clientId, amount, dueInDays }
+const { withErrorHandling, readBody, json, methodNotAllowed } = require("../_lib/http");
 const db = require("../_lib/supabase");
 
 module.exports = withErrorHandling(async (req, res) => {
-  if (req.method !== "GET") return methodNotAllowed(res, ["GET"]);
-  const divisionId = req.query.divisionId;
-  const filter = divisionId && divisionId !== "all" ? `division_id=eq.${divisionId}` : "";
-  const contacts = await db.select("contacts", {
-    filter,
-    select: "*,companies(name,domain,industry)",
-    order: "created_at.desc",
-    limit: "500",
-  });
-  json(res, 200, { contacts });
+  if (req.method === "GET") {
+    const invoices = await db.select("invoices", { select: "*,clients(name,division_id)", order: "created_at.desc" });
+    return json(res, 200, { invoices });
+  }
+  if (req.method === "POST") {
+    const b = readBody(req);
+    if (!b.clientId || !b.amount) return json(res, 400, { error: "clientId and amount are required" });
+    const due = new Date();
+    due.setDate(due.getDate() + (b.dueInDays || 30));
+    const [invoice] = await db.insert("invoices", [{
+      client_id: b.clientId,
+      amount: b.amount,
+      status: "Draft",
+      due_date: due.toISOString(),
+    }]);
+    return json(res, 200, { invoice });
+  }
+  methodNotAllowed(res, ["GET", "POST"]);
 });

@@ -1,9 +1,12 @@
-// GET /api/settings/suppression
-const { withErrorHandling, json, methodNotAllowed } = require("../_lib/http");
+// POST /api/leads/dispute
+// Body: { contactId, reason }
+const { withErrorHandling, readBody, json, methodNotAllowed } = require("../_lib/http");
 const db = require("../_lib/supabase");
 
 module.exports = withErrorHandling(async (req, res) => {
-  if (req.method !== "GET") return methodNotAllowed(res, ["GET"]);
-  const list = await db.select("suppression_list", { order: "added_at.desc", limit: "1000" });
-  json(res, 200, { suppression: list });
+  if (req.method !== "POST") return methodNotAllowed(res, ["POST"]);
+  const { contactId, reason } = readBody(req);
+  if (!contactId) return json(res, 400, { error: "contactId is required" });
+  const [dispute] = await db.insert("lead_disputes", [{ contact_id: contactId, reason: reason || "Not specified", status: "Open" }]);
+  json(res, 200, { dispute });
 });

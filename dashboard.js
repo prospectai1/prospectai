@@ -1,87 +1,31 @@
-/* Module 6 — Proposal Generation Center */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ProspectAI — Smarter Leads, Faster Growth</title>
+<meta name="description" content="ProspectAI is the AI-driven lead generation operating system: discover, qualify, engage, and convert high-value prospects in one unified platform." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop offset=%220%25%22 stop-color=%22%236366F1%22/><stop offset=%22100%25%22 stop-color=%22%23A855F7%22/></linearGradient></defs><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22url(%23g)%22/><text x=%2250%22 y=%2268%22 font-size=%2256%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22>P</text></svg>">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="app"></div>
 
-function renderProposals(root, state) {
-  const divFilter = state.currentDivisionFilter;
-  let proposals = divFilter === "all" ? state.proposals : state.proposals.filter(p => p.divisionId === divFilter);
-  proposals = proposals.slice().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+<!-- Toast host -->
+<div id="toast-host" class="toast-host"></div>
 
-  const statusCounts = { Draft:0, Sent:0, Viewed:0, Signed:0 };
-  proposals.forEach(p => statusCounts[p.status]++);
-  const winRate = proposals.length ? Math.round((statusCounts.Signed / proposals.length) * 100) : 0;
-
-  const eligibleClients = (divFilter === "all" ? state.clients : state.clients.filter(c=>c.divisionId===divFilter));
-
-  root.innerHTML = `
-    <div class="grid grid-4" style="margin-bottom:16px;">
-      ${kpiCard("Draft", statusCounts.Draft, "awaiting rep review", "flat")}
-      ${kpiCard("Sent", statusCounts.Sent, "tracking open/view", "flat")}
-      ${kpiCard("Viewed", statusCounts.Viewed, "in client's hands", "flat")}
-      ${kpiCard("Win Rate", winRate + "%", statusCounts.Signed + " signed", "up")}
-    </div>
-
-    <div class="card">
-      <div class="card-head">
-        <h3>Proposals</h3>
-        <button class="btn secondary sm" id="newProposalBtn">📄 Generate Proposal</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Client</th><th>Division</th><th>Value</th><th>Status</th><th>Created</th><th></th></tr></thead>
-          <tbody>
-            ${proposals.map(p => proposalRow(p)).join("") || `<tr><td colspan="6"><div class="empty">No proposals yet. Move a client to "Proposal Sent" in the pipeline, or generate one here.</div></td></tr>`}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-
-  document.getElementById("newProposalBtn").addEventListener("click", () => openGenerateModal(eligibleClients));
-  root.querySelectorAll("[data-advance-proposal]").forEach(btn => {
-    btn.addEventListener("click", () => Store.advanceProposal(btn.getAttribute("data-advance-proposal")));
-  });
-}
-
-function proposalStatusClass(status){
-  return { Draft:"gray", Sent:"blue", Viewed:"warm", Signed:"green" }[status] || "gray";
-}
-
-function proposalRow(p) {
-  const order = ["Draft","Sent","Viewed","Signed"];
-  const idx = order.indexOf(p.status);
-  const nextLabel = idx < order.length - 1 ? `Mark ${order[idx+1]}` : "Complete";
-  return `
-    <tr class="row-hover">
-      <td><b>${escapeHtml(p.clientName)}</b></td>
-      <td>${divisionName(p.divisionId)}</td>
-      <td>${fmt$(p.value)}</td>
-      <td><span class="badge ${proposalStatusClass(p.status)}">${p.status}</span></td>
-      <td>${fmtDate(p.createdAt)}</td>
-      <td>${idx < order.length - 1 ? `<button class="btn ghost sm" data-advance-proposal="${p.id}">${nextLabel} →</button>` : `<span class="muted">✓ signed</span>`}</td>
-    </tr>
-  `;
-}
-
-function openGenerateModal(clients) {
-  if (!clients.length) { Store.toast("No clients available in this division yet."); return; }
-  const html = `
-    <h2>Generate Proposal</h2>
-    <div class="modal-sub">The Proposal Agent pulls discovery-call notes, division/ICP data, and pricing rules to draft scope, pricing, timeline, and deliverables automatically.</div>
-    <div class="field">
-      <label>Client</label>
-      <select class="select" id="clientSelect">
-        ${clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)} — ${c.tier}</option>`).join("")}
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn secondary" id="cancelBtn">Cancel</button>
-      <button class="btn" id="genBtn">Generate with Proposal Agent</button>
-    </div>
-  `;
-  openModal(html, (backdrop) => {
-    backdrop.querySelector("#cancelBtn").addEventListener("click", () => backdrop.remove());
-    backdrop.querySelector("#genBtn").addEventListener("click", () => {
-      Store.createProposal(backdrop.querySelector("#clientSelect").value);
-      backdrop.remove();
-    });
-  });
-}
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/views/dashboard.js"></script>
+<script src="js/views/divisions.js"></script>
+<script src="js/views/leads.js"></script>
+<script src="js/views/pipeline.js"></script>
+<script src="js/views/proposals.js"></script>
+<script src="js/views/invoices.js"></script>
+<script src="js/views/settings.js"></script>
+<script src="js/views/portal.js"></script>
+<script src="js/views/analytics.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

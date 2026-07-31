@@ -1,88 +1,65 @@
-// POST /api/leads/search
-// Body: { divisionId, titles?: string[], industries?: string[], keywords?: string, perPage?: number }
-// Calls Apollo's People Search, upserts Company + Contact rows into Supabase,
-// computes each lead's deterministic score, and logs the run.
+// POST /api/outreach/draft
+// Body: { contactId, offer }
+// Claude drafts subject + body personalized only from verified fields
+// (name, title, company). Unsubscribe footer is appended in code afterward
+// — never left to the model — matching the build spec's hard requirement.
 
 const { withErrorHandling, readBody, json, methodNotAllowed } = require("../_lib/http");
-const { searchPeople } = require("../_lib/apollo");
 const db = require("../_lib/supabase");
-const { computeScore, seniorityForTitle, scoreToTier, fallbackRationale } = require("../_lib/scoring");
+const { askClaude } = require("../_lib/anthropic");
+
+const UNSUB_EMAIL = process.env.UNSUBSCRIBE_EMAIL || "unsubscribe@yourdomain.com";
+const UNSUB_FOOTER =
+  `\n\n---\nYou're receiving this because your profile matched an active campaign. ` +
+  `To unsubscribe, reply STOP or email ${UNSUB_EMAIL} (honored immediately).`;
 
 module.exports = withErrorHandling(async (req, res) => {
   if (req.method !== "POST") return methodNotAllowed(res, ["POST"]);
-  const body = readBody(req);
-  const { divisionId, titles, industries, keywords, perPage } = body;
+  const { contactId, offer } = readBody(req);
+  if (!contactId) return json(res, 400, { error: "contactId is required" });
 
-  if (!divisionId) return json(res, 400, { error: "divisionId is required" });
+  const contacts = await db.select("contacts", { filter: `id=eq.${contactId}`, select: "*,companies(name)" });
+  const contact = contacts[0];
+  if (!contact) return json(res, 404, { error: "Contact not found" });
+  const companyName = (contact.companies && contact.companies.name) || "your company";
 
-  const divisions = await db.select("divisions", { filter: `id=eq.${divisionId}` });
-  const division = divisions[0];
-  if (!division) return json(res, 404, { error: "Division not found" });
-
-  const people = await searchPeople({ titles, industries, keywords, perPage: perPage || 10 });
-
-  const created = [];
-  for (const person of people) {
-    const org = person.organization || {};
-
-    // Upsert company by domain (simple existence check, then insert if missing)
-    let companyId;
-    const domain = org.primary_domain || org.website_url || null;
-    if (domain) {
-      const existing = await db.select("companies", { filter: `domain=eq.${encodeURIComponent(domain)}` });
-      if (existing.length) companyId = existing[0].id;
-    }
-    if (!companyId) {
-      const [company] = await db.insert("companies", [{
-        division_id: divisionId,
-        name: org.name || "Unknown Company",
-        domain,
-        industry: (org.industry || "").toString(),
-        employee_count: org.estimated_num_employees || null,
-        source: "apollo",
-        apollo_org_id: org.id || null,
-      }]);
-      companyId = company.id;
-    }
-
-    const title = person.title || "";
-    const subscores = {
-      icpFit: 60, // static-ICP baseline; refine later by comparing against division.icp text if desired
-      intentSignal: 30,
-      seniority: seniorityForTitle(title),
-      engagement: 20,
-    };
-    const score = computeScore(subscores, division.scoring_weights);
-
-    const contactRow = {
-      company_id: companyId,
-      division_id: divisionId,
-      name: [person.first_name, person.last_name].filter(Boolean).join(" ") || person.name || "Unknown",
-      title,
-      email: person.email || null,
-      email_verified: person.email_status === "verified",
-      phone: (person.phone_numbers && person.phone_numbers[0] && person.phone_numbers[0].raw_number) || null,
-      linkedin_url: person.linkedin_url || null,
-      apollo_person_id: person.id || null,
-      signal_type: "static-icp",
-      source: "Apollo people search",
-      subscores,
-      score,
-      score_tier: scoreToTier(score),
-      status: "New",
-    };
-    contactRow.score_rationale = fallbackRationale(contactRow, { name: contactRow.name && org.name ? org.name : "the company" }, division.name);
-
-    const [contact] = await db.insert("contacts", [contactRow]);
-    created.push(contact);
+  let subject = `Quick question for ${companyName}`;
+  let bodyText;
+  try {
+    const draft = await askClaude({
+      system:
+        "You draft short, plain, professional first-touch B2B cold emails. " +
+        "Personalize ONLY using the exact name, title, and company given to you. " +
+        "NEVER invent specific facts about the company or person — no funding rounds, news, hires, or events unless explicitly given. " +
+        "Keep it under 90 words. Output format exactly:\nSUBJECT: <subject line>\nBODY: <email body>",
+      prompt:
+        `Contact name: ${contact.name}\nTitle: ${contact.title || "unknown"}\nCompany: ${companyName}\n` +
+        `What we're offering: ${offer || "a way to improve pipeline quality"}\n` +
+        `Write the email now.`,
+      maxTokens: 300,
+    });
+    const subjMatch = draft.match(/SUBJECT:\s*(.+)/i);
+    const bodyMatch = draft.match(/BODY:\s*([\s\S]+)/i);
+    if (subjMatch) subject = subjMatch[1].trim();
+    bodyText = bodyMatch ? bodyMatch[1].trim() : draft.trim();
+  } catch (e) {
+    bodyText =
+      `Hi ${contact.name.split(" ")[0]},\n\nI work with teams like ${companyName} on ${offer || "improving pipeline quality"}. ` +
+      `Given your role as ${contact.title || "a decision-maker"}, thought it was worth a quick note.\n\n` +
+      `Open to a 15-minute call this week?\n\nBest,\nProspectAI\n\n(AI draft unavailable, used template fallback: ${e.message})`;
   }
 
-  await db.insert("agent_activity_log", [{
-    action: "lead_discovery",
-    entity_type: "division",
-    entity_id: divisionId,
-    details: { count: created.length, titles, industries, keywords },
+  const finalBody = bodyText + UNSUB_FOOTER;
+
+  const [message] = await db.insert("outreach_messages", [{
+    contact_id: contactId,
+    channel: "email",
+    subject,
+    body: finalBody,
+    status: "draft",
   }]);
 
-  json(res, 200, { created: created.length, contacts: created });
+  await db.insert("agent_activity_log", [{ action: "outreach_drafted", entity_type: "contact", entity_id: contactId, details: { messageId: message.id } }]);
+
+  json(res, 200, { message });
 });

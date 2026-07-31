@@ -1,45 +1,34 @@
-// Minimal Apollo.io API client via plain fetch — no SDK dependency.
-// Docs: https://docs.apollo.io/reference/people-search
+// PATCH /api/settings/weights   { divisionId, weights: {icpFit,intentSignal,seniority,engagement} }
+// Updates a division's scoring weights and recomputes every one of its
+// leads' scores immediately (weights are normalized to sum to 1 first).
+const { withErrorHandling, readBody, json, methodNotAllowed } = require("../_lib/http");
+const db = require("../_lib/supabase");
+const { computeScore, scoreToTier } = require("../_lib/scoring");
 
-const APOLLO_API_KEY = process.env.APOLLO_API_KEY;
-const SEARCH_URL = "https://api.apollo.io/api/v1/mixed_people/search";
+module.exports = withErrorHandling(async (req, res) => {
+  if (req.method !== "PATCH") return methodNotAllowed(res, ["PATCH"]);
+  const { divisionId, weights } = readBody(req);
+  if (!divisionId || !weights) return json(res, 400, { error: "divisionId and weights are required" });
 
-// params: { titles: string[], industries: string[], employeeRanges: string[], perPage }
-async function searchPeople(params) {
-  if (!APOLLO_API_KEY) {
-    const err = new Error("Server is missing APOLLO_API_KEY. Set it in Vercel -> Settings -> Environment Variables.");
-    err.statusCode = 500;
-    throw err;
-  }
-
-  const body = {
-    api_key: APOLLO_API_KEY, // Apollo also accepts this via the X-Api-Key header; sent both ways for compatibility across API versions
-    page: 1,
-    per_page: params.perPage || 10,
+  const sum = ["icpFit", "intentSignal", "seniority", "engagement"].reduce((s, k) => s + (weights[k] || 0), 0) || 1;
+  const normalized = {
+    icpFit: weights.icpFit / sum,
+    intentSignal: weights.intentSignal / sum,
+    seniority: weights.seniority / sum,
+    engagement: weights.engagement / sum,
   };
-  if (params.titles && params.titles.length) body.person_titles = params.titles;
-  if (params.industries && params.industries.length) body.q_organization_industry_tag_ids = params.industries;
-  if (params.employeeRanges && params.employeeRanges.length) body.organization_num_employees_ranges = params.employeeRanges;
-  if (params.keywords) body.q_keywords = params.keywords;
 
-  const res = await fetch(SEARCH_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-cache",
-      "X-Api-Key": APOLLO_API_KEY,
-    },
-    body: JSON.stringify(body),
-  });
+  await db.update("divisions", `id=eq.${divisionId}`, { scoring_weights: normalized });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const err = new Error((data && (data.error || data.message)) || `Apollo API error (${res.status})`);
-    err.statusCode = res.status === 401 || res.status === 403 ? 502 : 500;
-    err.details = data;
-    throw err;
+  const contacts = await db.select("contacts", { filter: `division_id=eq.${divisionId}`, select: "id,subscores" });
+  let n = 0;
+  for (const c of contacts) {
+    const score = computeScore(c.subscores, normalized);
+    await db.update("contacts", `id=eq.${c.id}`, { score, score_tier: scoreToTier(score) });
+    n++;
   }
-  return data.people || [];
-}
 
-module.exports = { searchPeople };
+  await db.insert("agent_activity_log", [{ action: "weights_updated", entity_type: "division", entity_id: divisionId, details: { normalized, recomputed: n } }]);
+
+  json(res, 200, { weights: normalized, recomputed: n });
+});

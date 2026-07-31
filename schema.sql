@@ -1,31 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ProspectAI — Smarter Leads, Faster Growth</title>
-<meta name="description" content="ProspectAI is the AI-driven lead generation operating system: discover, qualify, engage, and convert high-value prospects in one unified platform." />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop offset=%220%25%22 stop-color=%22%236366F1%22/><stop offset=%22100%25%22 stop-color=%22%23A855F7%22/></linearGradient></defs><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22url(%23g)%22/><text x=%2250%22 y=%2268%22 font-size=%2256%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22>P</text></svg>">
-<link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-<div id="app"></div>
+/* ProspectAI — tiny dependency-free SVG chart helpers */
 
-<!-- Toast host -->
-<div id="toast-host" class="toast-host"></div>
+const Charts = {
+  bar(data, opts) {
+    // data: [{label, value}]
+    opts = opts || {};
+    const w = opts.width || 400, h = opts.height || 180, pad = 28;
+    const max = Math.max(1, ...data.map(d => d.value));
+    const barW = (w - pad*2) / data.length;
+    const color = opts.color || "#6366f1";
+    let bars = "", labels = "";
+    data.forEach((d, i) => {
+      const bh = (d.value / max) * (h - pad*2);
+      const x = pad + i*barW + barW*0.15;
+      const y = h - pad - bh;
+      bars += `<rect x="${x}" y="${y}" width="${barW*0.7}" height="${bh}" rx="4" fill="${d.color || color}"><title>${d.label}: ${d.value}</title></rect>`;
+      labels += `<text x="${x + barW*0.35}" y="${h-8}" font-size="9" fill="#6b7386" text-anchor="middle">${d.label}</text>`;
+    });
+    return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${bars}${labels}</svg>`;
+  },
 
-<script src="js/data.js"></script>
-<script src="js/store.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/views/dashboard.js"></script>
-<script src="js/views/divisions.js"></script>
-<script src="js/views/leads.js"></script>
-<script src="js/views/pipeline.js"></script>
-<script src="js/views/proposals.js"></script>
-<script src="js/views/invoices.js"></script>
-<script src="js/views/settings.js"></script>
-<script src="js/views/portal.js"></script>
-<script src="js/views/analytics.js"></script>
-<script src="js/app.js"></script>
-</body>
-</html>
+  line(series, opts) {
+    // series: [value,...]
+    opts = opts || {};
+    const w = opts.width || 400, h = opts.height || 140, pad = 14;
+    const max = Math.max(...series, 1), min = Math.min(...series, 0);
+    const range = (max - min) || 1;
+    const stepX = (w - pad*2) / (series.length - 1 || 1);
+    const pts = series.map((v,i) => {
+      const x = pad + i*stepX;
+      const y = h - pad - ((v - min)/range) * (h - pad*2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    const color = opts.color || "#6366f1";
+    const areaPts = `${pad},${h-pad} ${pts.join(" ")} ${pad + (series.length-1)*stepX},${h-pad}`;
+    return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">
+      <polygon points="${areaPts}" fill="${color}22" />
+      <polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>`;
+  },
+
+  donut(segments, opts) {
+    // segments: [{label, value, color}]
+    opts = opts || {};
+    const size = opts.size || 150, stroke = opts.stroke || 16;
+    const r = (size - stroke) / 2;
+    const cx = size/2, cy = size/2;
+    const total = segments.reduce((s,d) => s+d.value, 0) || 1;
+    let offset = 0;
+    const circumference = 2 * Math.PI * r;
+    let circles = "";
+    segments.forEach(seg => {
+      const frac = seg.value / total;
+      const dash = frac * circumference;
+      circles += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${stroke}"
+        stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})">
+        <title>${seg.label}: ${seg.value}</title></circle>`;
+      offset += dash;
+    });
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${circles}</svg>`;
+  },
+
+  sparkline(series, opts) {
+    opts = opts || { width: 90, height: 28, color: "#22c55e" };
+    return this.line(series, opts);
+  },
+};

@@ -1,12 +1,11 @@
-// POST /api/leads/dispute
-// Body: { contactId, reason }
-const { withErrorHandling, readBody, json, methodNotAllowed } = require("../_lib/http");
+// GET /api/outreach/list?contactId=<optional>
+const { withErrorHandling, json, methodNotAllowed } = require("../_lib/http");
 const db = require("../_lib/supabase");
 
 module.exports = withErrorHandling(async (req, res) => {
-  if (req.method !== "POST") return methodNotAllowed(res, ["POST"]);
-  const { contactId, reason } = readBody(req);
-  if (!contactId) return json(res, 400, { error: "contactId is required" });
-  const [dispute] = await db.insert("lead_disputes", [{ contact_id: contactId, reason: reason || "Not specified", status: "Open" }]);
-  json(res, 200, { dispute });
+  if (req.method !== "GET") return methodNotAllowed(res, ["GET"]);
+  const contactId = req.query.contactId;
+  const filter = contactId ? `contact_id=eq.${contactId}` : "";
+  const messages = await db.select("outreach_messages", { filter, order: "created_at.desc", limit: "500" });
+  json(res, 200, { messages });
 });
