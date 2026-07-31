@@ -1,111 +1,124 @@
-/* Module 2 — Industry Management Center */
+/* Part 7 — Client Portal: scoped, read-mostly view for a single client */
 
-function renderDivisions(root, state) {
+let portalSelectedClientId = null;
+
+function renderPortal(root, state) {
+  const clients = state.clients;
+  if (!portalSelectedClientId || !clients.find(c => c.id === portalSelectedClientId)) {
+    portalSelectedClientId = (clients.find(c => c.stage !== "New Inquiry") || clients[0])?.id;
+  }
+  const client = clients.find(c => c.id === portalSelectedClientId);
+
+  if (!client) { root.innerHTML = `<div class="empty">No clients yet.</div>`; return; }
+
+  const leads = state.leads.filter(l => l.divisionId === client.divisionId).slice(0, 12);
+  const division = divisionById(client.divisionId);
+  const pacingPct = Math.min(100, Math.round((client.leadsDelivered / client.slaTarget) * 100));
+  const disputesForClientLeads = state.disputes.filter(d => leads.some(l => l.id === d.leadId));
+
   root.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div class="muted">Each division has its own ICP, qualification rubric, compliance profile, and data sources — all sharing the same database, AI agent layer, and billing engine.</div>
-      <button class="btn" id="newDivisionBtn">+ New Division</button>
+    <div class="field" style="max-width:320px;margin-bottom:18px;">
+      <label>Preview as client (internal-only selector)</label>
+      <select class="select" id="clientPicker">
+        ${clients.map(c => `<option value="${c.id}" ${c.id===client.id?"selected":""}>${escapeHtml(c.name)}</option>`).join("")}
+      </select>
     </div>
-    <div class="grid grid-3" id="divGrid"></div>
+
+    <div class="portal-shell" style="border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div class="portal-topbar">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;">${division ? division.icon + " " + division.name : ""} · White-labeled Client Portal</div>
+            <div style="font-size:20px;font-weight:800;margin-top:4px;">${escapeHtml(client.name)}</div>
+          </div>
+          <div class="score-ring" style="background:${healthColor(client.healthBand)}22;color:${healthColor(client.healthBand)};border:2px solid ${healthColor(client.healthBand)}55;">${client.healthScore}</div>
+        </div>
+      </div>
+
+      <div class="content" style="padding:22px;">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-head">
+            <h3>Project Health</h3>
+            <span class="badge ${healthBadgeClass(client.healthBand)}">● ${client.healthBand}</span>
+          </div>
+          <div class="stat-row" style="margin-bottom:14px;">
+            <div class="stat"><div class="n">${client.leadsDelivered}</div><div class="l">Leads Delivered</div></div>
+            <div class="stat"><div class="n">${client.slaTarget}</div><div class="l">SLA Target</div></div>
+            <div class="stat"><div class="n">${client.renewalProbability}%</div><div class="l">Renewal Probability</div></div>
+            <div class="stat"><div class="n">${client.stage}</div><div class="l">Current Stage</div></div>
+          </div>
+          <div class="muted" style="font-size:11.5px;margin-bottom:6px;">Pacing vs. SLA target</div>
+          <div class="progress"><div style="width:${pacingPct}%;"></div></div>
+          <div class="muted" style="font-size:11.5px;margin-top:6px;">${pacingPct}% of contracted volume delivered this period</div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-head">
+              <h3>Delivered Leads</h3>
+              <span class="hint">with scoring rationale</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Company</th><th>Contact</th><th>Score</th><th>Tier</th><th></th></tr></thead>
+                <tbody>
+                  ${leads.map(l => `
+                    <tr class="row-hover">
+                      <td><b>${escapeHtml(l.company)}</b></td>
+                      <td>${escapeHtml(l.contactName)}<div class="muted" style="font-size:11px;">${escapeHtml(l.title)}</div></td>
+                      <td>${l.score}</td>
+                      <td><span class="badge ${tierBadgeClass(l.tier)}">${l.tier}</span></td>
+                      <td><button class="btn ghost sm" data-portal-dispute="${l.id}">Dispute this lead</button></td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div class="card" style="margin-bottom:16px;">
+              <div class="card-head"><h3>This Week's Highlights</h3></div>
+              <ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--text-dim);line-height:1.9;">
+                <li>${randInt(3,9)} new qualified leads sourced</li>
+                <li>${randInt(1,4)} meetings booked from your campaigns</li>
+                <li>Domain health: <b style="color:var(--green)">Good</b> — deliverability within target</li>
+              </ul>
+            </div>
+            <div class="card" style="margin-bottom:16px;">
+              <div class="card-head"><h3>Reports</h3></div>
+              <button class="btn secondary sm" style="width:100%;margin-bottom:8px;justify-content:center;" id="dlPdf">⬇ Download Weekly Report (PDF)</button>
+              <button class="btn secondary sm" style="width:100%;justify-content:center;" id="dlCsv">⬇ Export Lead Data (CSV)</button>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Support</h3></div>
+              <button class="btn sm" style="width:100%;justify-content:center;" id="raiseTicket">Raise a Support Ticket</button>
+              ${disputesForClientLeads.length ? `<div class="muted" style="font-size:11.5px;margin-top:10px;">${disputesForClientLeads.length} open dispute(s) — replacement SLA clock running.</div>` : ""}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 
-  const grid = document.getElementById("divGrid");
-  grid.innerHTML = state.divisions.map(d => divisionCard(d, state)).join("");
-
-  grid.querySelectorAll("[data-discover]").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      Store.runLeadDiscovery(btn.getAttribute("data-discover"));
-    });
+  document.getElementById("clientPicker").addEventListener("change", (e) => { portalSelectedClientId = e.target.value; renderPortal(root, Store.get()); });
+  root.querySelectorAll("[data-portal-dispute]").forEach(btn => {
+    btn.addEventListener("click", () => Store.disputeLead(btn.getAttribute("data-portal-dispute"), "Confirmed duplicate"));
   });
-  grid.querySelectorAll("[data-qualify]").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      Store.runQualificationPass(btn.getAttribute("data-qualify"));
-    });
-  });
-  grid.querySelectorAll("[data-view-division]").forEach(card => {
-    card.addEventListener("click", () => {
-      Store.setDivisionFilter(card.getAttribute("data-view-division"));
-      navigate("leads");
-    });
-  });
-
-  document.getElementById("newDivisionBtn").addEventListener("click", openNewDivisionModal);
+  document.getElementById("dlPdf").addEventListener("click", () => Store.toast("Weekly report generated (simulated) — in production this exports a PDF via the Reporting service."));
+  document.getElementById("dlCsv").addEventListener("click", () => exportLeadsCsv(leads, client.name));
+  document.getElementById("raiseTicket").addEventListener("click", () => Store.toast("Support ticket routed to Customer Success (simulated)."));
 }
 
-function divisionCard(d, state) {
-  const leads = state.leads.filter(l => l.divisionId === d.id).length;
-  return `
-    <div class="card division-card" data-view-division="${d.id}">
-      <div class="dname"><span class="division-icon" style="background:${d.color}22;">${d.icon}</span> ${d.name}</div>
-      <div class="muted" style="margin-top:10px;font-size:12.5px;line-height:1.5;">${escapeHtml(d.icp)}</div>
-      <div class="tag-row">
-        ${d.compliance.map(c => `<span class="tag">🛡 ${c}</span>`).join("")}
-        ${d.geographies.map(g => `<span class="tag">📍 ${g}</span>`).join("")}
-      </div>
-      <div class="stat-row" style="margin-top:14px;">
-        <div class="stat"><div class="n">${leads}</div><div class="l">Leads</div></div>
-        <div class="stat"><div class="n">${d.activeClients}</div><div class="l">Clients</div></div>
-        <div class="stat"><div class="n">${fmt$(d.arr)}</div><div class="l">ARR</div></div>
-      </div>
-      <div class="muted" style="margin-top:12px;font-size:11.5px;">KPI focus: <b style="color:var(--text-dim)">${d.kpiFocus}</b></div>
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="btn secondary sm" data-discover="${d.id}" style="flex:1;">🧲 Run Discovery</button>
-        <button class="btn secondary sm" data-qualify="${d.id}" style="flex:1;">🎯 Run Qualification</button>
-      </div>
-    </div>
-  `;
-}
+function healthColor(band){ return { Green:"#22c55e", Yellow:"#f59e0b", Red:"#ef4444" }[band] || "#6b7386"; }
 
-function openNewDivisionModal() {
-  const html = `
-    <h2>Create Industry Division</h2>
-    <div class="modal-sub">Guided setup — ICP, compliance profile, and data sources. AI Research Agent can auto-suggest an ICP from this description.</div>
-    <div class="field">
-      <label>Division name</label>
-      <input class="input" id="fName" placeholder="e.g. Legal Services" />
-    </div>
-    <div class="field">
-      <label>Icon (emoji)</label>
-      <input class="input" id="fIcon" placeholder="⚖️" maxlength="2" />
-    </div>
-    <div class="field">
-      <label>Ideal Customer Profile</label>
-      <textarea id="fIcp" rows="3" placeholder="Firmographic + persona filters, e.g. mid-market law firms, 20-200 employees, decision-maker: Managing Partner"></textarea>
-    </div>
-    <div class="field">
-      <label>Compliance profile (comma-separated)</label>
-      <input class="input" id="fCompliance" placeholder="TCPA, CAN-SPAM" />
-    </div>
-    <div class="field">
-      <label>Data sources (comma-separated)</label>
-      <input class="input" id="fSources" placeholder="State bar registries, Martindale-Hubbell" />
-    </div>
-    <div class="field">
-      <label>KPI focus</label>
-      <input class="input" id="fKpi" placeholder="Cost per qualified consultation" />
-    </div>
-    <div class="modal-actions">
-      <button class="btn secondary" id="cancelBtn">Cancel</button>
-      <button class="btn" id="createBtn">Create Division</button>
-    </div>
-  `;
-  const modal = openModal(html, (backdrop) => {
-    backdrop.querySelector("#cancelBtn").addEventListener("click", () => backdrop.remove());
-    backdrop.querySelector("#createBtn").addEventListener("click", () => {
-      const name = backdrop.querySelector("#fName").value.trim();
-      if (!name) { backdrop.querySelector("#fName").focus(); return; }
-      Store.createDivision({
-        name,
-        icon: backdrop.querySelector("#fIcon").value.trim() || "🧩",
-        icp: backdrop.querySelector("#fIcp").value.trim(),
-        compliance: backdrop.querySelector("#fCompliance").value.split(",").map(s=>s.trim()).filter(Boolean),
-        sources: backdrop.querySelector("#fSources").value.split(",").map(s=>s.trim()).filter(Boolean),
-        kpiFocus: backdrop.querySelector("#fKpi").value.trim() || "Cost per qualified lead",
-        color: rand(["#22c55e","#6366f1","#f59e0b","#3b82f6","#a855f7","#ec4899","#14b8a6"]),
-      });
-      backdrop.remove();
-    });
-  });
+function exportLeadsCsv(leads, clientName) {
+  const header = "Company,Contact,Title,Score,Tier,Status\n";
+  const rows = leads.map(l => [l.company, l.contactName, l.title, l.score, l.tier, l.status].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([header + rows], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `${clientName.replace(/\s+/g,"_")}_leads.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 }

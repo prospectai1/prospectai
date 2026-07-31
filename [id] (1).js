@@ -1,20 +1,50 @@
-// GET /api/settings/deliverability
-// POST /api/settings/deliverability/acknowledge  (handled here via body.action="acknowledge")
+// PATCH /api/clients/:id  — body may include { stage, healthScore, leadsDelivered, ... }
+// GET /api/clients/:id
 const { withErrorHandling, readBody, json, methodNotAllowed } = require("../_lib/http");
 const db = require("../_lib/supabase");
 
+const CLIENT_STAGES = [
+  "New Inquiry", "Discovery Call", "Proposal Sent", "Negotiation",
+  "Contract Signed", "Onboarding", "Active Project", "Delivery", "Renewal / Upsell",
+];
+
 module.exports = withErrorHandling(async (req, res) => {
+  const { id } = req.query;
+
   if (req.method === "GET") {
-    const [dlv] = await db.select("deliverability", { filter: "id=eq.1" });
-    return json(res, 200, { deliverability: dlv });
+    const rows = await db.select("clients", { filter: `id=eq.${id}` });
+    if (!rows[0]) return json(res, 404, { error: "Client not found" });
+    return json(res, 200, { client: rows[0] });
   }
-  if (req.method === "POST") {
-    const { action } = readBody(req);
-    if (action === "acknowledge") {
-      const [dlv] = await db.update("deliverability", "id=eq.1", { sends_blocked: false, bounce_rate: 0.4, spam_rate: 0.05 });
-      return json(res, 200, { deliverability: dlv });
+
+  if (req.method === "PATCH") {
+    const b = readBody(req);
+    const rows = await db.select("clients", { filter: `id=eq.${id}` });
+    const before = rows[0];
+    if (!before) return json(res, 404, { error: "Client not found" });
+
+    const patch = {};
+    if (b.stage && CLIENT_STAGES.includes(b.stage)) patch.stage = b.stage;
+    if (b.healthScore != null) patch.health_score = b.healthScore;
+    if (b.leadsDelivered != null) patch.leads_delivered = b.leadsDelivered;
+    if (b.contractValue != null) patch.contract_value = b.contractValue;
+    if (b.renewalProbability != null) patch.renewal_probability = b.renewalProbability;
+
+    const [updated] = await db.update("clients", `id=eq.${id}`, patch);
+
+    // Stage-change automations, mirroring Part 5 of the blueprint.
+    if (patch.stage && patch.stage !== before.stage) {
+      if (patch.stage === "Proposal Sent") {
+        await db.insert("proposals", [{ client_id: id, content: "", value: updated.contract_value, status: "Draft" }]);
+        await db.insert("agent_activity_log", [{ action: "proposal_auto_drafted", entity_type: "client", entity_id: id }]);
+      }
+      if (patch.stage === "Contract Signed") {
+        await db.insert("agent_activity_log", [{ action: "project_plan_generated", entity_type: "client", entity_id: id }]);
+      }
     }
-    return json(res, 400, { error: "Unknown action" });
+
+    return json(res, 200, { client: updated });
   }
-  methodNotAllowed(res, ["GET", "POST"]);
+
+  methodNotAllowed(res, ["GET", "PATCH"]);
 });

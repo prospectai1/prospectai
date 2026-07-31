@@ -1,220 +1,267 @@
-/* Module 1 — Dashboard (Executive Home). Role-aware. */
+/* Module 3 — Lead Generation Center */
 
-function renderDashboard(root, state) {
-  const role = state.currentRole;
+let leadsFilterTier = "all";
+let leadsFilterSignal = "all";
+let leadsSearch = "";
+
+function renderLeads(root, state) {
   const divFilter = state.currentDivisionFilter;
-  const scoped = divFilter === "all" ? state : null;
+  let leads = divFilter === "all" ? state.leads : state.leads.filter(l => l.divisionId === divFilter);
+  if (leadsFilterTier !== "all") leads = leads.filter(l => l.tier === leadsFilterTier);
+  if (leadsFilterSignal !== "all") leads = leads.filter(l => l.signalType === leadsFilterSignal);
+  if (leadsSearch.trim()) {
+    const q = leadsSearch.toLowerCase();
+    leads = leads.filter(l => l.company.toLowerCase().includes(q) || l.contactName.toLowerCase().includes(q));
+  }
+  leads = leads.slice().sort((a,b) => b.score - a.score);
 
-  const leads = divFilter === "all" ? state.leads : state.leads.filter(l => l.divisionId === divFilter);
-  const clients = divFilter === "all" ? state.clients : state.clients.filter(c => c.divisionId === divFilter);
-  const totalARR = state.divisions.reduce((s,d)=>s+d.arr,0);
-  const scopedARR = divFilter === "all" ? totalARR : (divisionById(divFilter)?.arr || 0);
-  const pipelineValue = state.proposals.filter(p => (divFilter==="all"||p.divisionId===divFilter) && p.status !== "Signed").reduce((s,p)=>s+p.value,0);
-  const activeClients = clients.length;
-  const atRisk = clients.filter(c => c.healthBand === "Red").length;
-  const breachedSla = clients.filter(c => c.leadsDelivered < c.slaTarget * 0.6).length;
-  const leaderboard = buildLeaderboard(state, divFilter);
-
-  const dlv = state.deliverability;
-  const dlvBreached = dlv.bounceRate >= 2 || dlv.spamRate >= 0.3;
+  const tierCounts = { Hot:0, Warm:0, Cold:0, Disqualified:0 };
+  (divFilter==="all"?state.leads:state.leads.filter(l=>l.divisionId===divFilter)).forEach(l => tierCounts[l.tier]++);
 
   root.innerHTML = `
-    ${role === "client" ? `<div class="banner">You're viewing the internal dashboard as ${roleLabel(role)}. Switch to the Client Portal from the sidebar to see the client-facing view.</div>` : ""}
-    ${dlvBreached ? `
-      <div class="banner" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fca5a5;display:flex;justify-content:space-between;align-items:center;">
-        <span>⚠ Deliverability threshold breached — bounce rate ${dlv.bounceRate}% / spam complaints ${dlv.spamRate}%. New outreach sends are blocked until this is acknowledged.</span>
-        <button class="btn danger sm" id="ackDlvBtn">Acknowledge & Resume</button>
-      </div>
-    ` : ""}
-
-    <div class="grid grid-4">
-      ${kpiCard("Total Leads", fmtNum(leads.length), leadsDelta(state, divFilter), "up")}
-      ${kpiCard("Active Clients", fmtNum(activeClients), `${clients.filter(c=>c.tier==="Enterprise").length} enterprise · ${clients.filter(c=>c.tier==="Retainer").length} retainer`, "flat")}
-      ${kpiCard("Pipeline Value", fmt$(pipelineValue), "weighted across open proposals", "flat")}
-      ${kpiCard(divFilter==="all" ? "ARR (company)" : "ARR (division)", fmt$(scopedARR), "+" + randStablePct(divFilter) + "% vs last quarter", "up")}
+    <div class="grid grid-4" style="margin-bottom:16px;">
+      ${kpiCard("Hot Leads", tierCounts.Hot, "score ≥ 70", "up")}
+      ${kpiCard("Warm Leads", tierCounts.Warm, "score 40-69", "flat")}
+      ${kpiCard("Cold Leads", tierCounts.Cold, "score 15-39, nurture", "flat")}
+      ${kpiCard("Disqualified", tierCounts.Disqualified, "score < 15", "down")}
     </div>
 
-    <div class="two-col" style="margin-top:16px;">
-      <div class="card">
-        <div class="card-head">
-          <h3>Email Deliverability</h3>
-          <span class="hint">Section 6 compliance guardrails</span>
-        </div>
-        <div class="stat-row" style="margin-bottom:14px;">
-          <div class="stat"><div class="n" style="color:${dlv.bounceRate>=2?'var(--red)':'var(--text)'}">${dlv.bounceRate}%</div><div class="l">Bounce rate (cap 2%)</div></div>
-          <div class="stat"><div class="n" style="color:${dlv.spamRate>=0.3?'var(--red)':'var(--text)'}">${dlv.spamRate}%</div><div class="l">Spam complaints (cap 0.3%)</div></div>
-          <div class="stat"><div class="n">${dlv.sentToday}/${dlv.dailyCap}</div><div class="l">Sends today (warm-up cap)</div></div>
-        </div>
+    <div class="card">
+      <div class="card-head">
+        <h3>Lead Database</h3>
         <div style="display:flex;gap:8px;">
-          <span class="badge ${dlv.spfDkimDmarc?'green':'red'}">${dlv.spfDkimDmarc?'✓':'✗'} SPF/DKIM/DMARC verified</span>
-          <span class="badge ${dlv.sendsBlocked?'red':'green'}">${dlv.sendsBlocked?'Sends blocked':'Sending allowed'}</span>
+          <button class="btn secondary sm" id="discoveryBtn">🧲 Run AI Discovery</button>
+          <button class="btn secondary sm" id="qualifyBtn">🎯 Run Qualification</button>
         </div>
       </div>
-      <div class="card">
-        <div class="card-head">
-          <h3>Suppression List</h3>
-          <span class="hint">bounced / unsubscribed</span>
-        </div>
-        <div class="stat-row">
-          <div class="stat"><div class="n">${state.suppressionList.length}</div><div class="l">Suppressed contacts</div></div>
-          <div class="stat"><div class="n">${state.outreachMessages.filter(m=>m.status==='sent').length}</div><div class="l">Emails sent</div></div>
-        </div>
-        <div class="muted" style="font-size:11.5px;margin-top:10px;">Every send is checked against this list before going out — no exceptions.</div>
-      </div>
-    </div>
 
-    <div class="two-col" style="margin-top:16px;">
-      <div class="card">
-        <div class="card-head">
-          <h3>Division Performance</h3>
-          <span class="hint">leads generated · conversion · revenue</span>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <input class="input" id="leadSearch" placeholder="Search company or contact…" style="max-width:220px;" value="${escapeHtml(leadsSearch)}" />
+        <div class="chip-row" id="tierChips">
+          ${["all","Hot","Warm","Cold","Disqualified"].map(t => `<span class="chip ${leadsFilterTier===t?"active":""}" data-tier="${t}">${t==="all"?"All tiers":t}</span>`).join("")}
         </div>
-        ${renderDivisionTable(state)}
-      </div>
-      <div class="card">
-        <div class="card-head">
-          <h3>Delivery Status</h3>
-          <span class="hint">SLA health</span>
-        </div>
-        <div class="stat-row" style="margin-bottom:16px;">
-          <div class="stat"><div class="n" style="color:var(--green)">${clients.length - atRisk - breachedSla}</div><div class="l">On track</div></div>
-          <div class="stat"><div class="n" style="color:var(--amber)">${breachedSla}</div><div class="l">At risk</div></div>
-          <div class="stat"><div class="n" style="color:var(--red)">${atRisk}</div><div class="l">Breached SLA</div></div>
-        </div>
-        ${Charts.donut([
-          {label:"On track", value: Math.max(clients.length - atRisk - breachedSla,0), color:"#22c55e"},
-          {label:"At risk", value: breachedSla, color:"#f59e0b"},
-          {label:"Breached", value: atRisk, color:"#ef4444"},
-        ], {size:140})}
-      </div>
-    </div>
-
-    <div class="two-col" style="margin-top:16px;">
-      <div class="card">
-        <div class="card-head">
-          <h3>Team Performance Leaderboard</h3>
-          <span class="hint">leads sourced · meetings booked</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Rep</th><th>Division</th><th>Leads Sourced</th><th>Meetings</th><th>Response Rate</th></tr></thead>
-            <tbody>
-              ${leaderboard.map(r => `
-                <tr class="row-hover">
-                  <td><b>${r.name}</b></td>
-                  <td>${r.division}</td>
-                  <td>${r.sourced}</td>
-                  <td>${r.meetings}</td>
-                  <td>${r.responseRate}%</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
+        <div class="chip-row" id="signalChips">
+          ${[["all","All sources"],["static-icp","Static ICP"],["intent-signal","Intent Signal"],["trigger-event","Trigger Event"]].map(([v,l]) => `<span class="chip ${leadsFilterSignal===v?"active":""}" data-signal="${v}">${l}</span>`).join("")}
         </div>
       </div>
-      <div class="card">
-        <div class="card-head">
-          <h3>AI Agent Activity Feed</h3>
-          <span class="hint">live</span>
-        </div>
-        ${renderAgentFeed(state, divFilter)}
-      </div>
-    </div>
-  `;
 
-  const ackBtn = document.getElementById("ackDlvBtn");
-  if (ackBtn) ackBtn.addEventListener("click", () => Store.acknowledgeDeliverabilityAlert());
-}
-
-function roleLabel(id){ const r = ROLES.find(r=>r.id===id); return r ? r.label : id; }
-
-function kpiCard(label, value, delta, trend) {
-  return `
-    <div class="card kpi">
-      <div class="label">${label}</div>
-      <div class="value">${value}</div>
-      <div class="delta ${trend}">${trend === "up" ? "▲" : trend === "down" ? "▼" : "•"} ${delta}</div>
-    </div>
-  `;
-}
-
-function leadsDelta(state, divFilter){
-  const leads = divFilter === "all" ? state.leads : state.leads.filter(l=>l.divisionId===divFilter);
-  const last7 = leads.filter(l => (Date.now() - new Date(l.createdAt))/86400000 <= 7).length;
-  return `+${last7} in last 7 days`;
-}
-
-function randStablePct(seedKey){
-  // deterministic-ish pseudo value per division so it doesn't jump on every re-render
-  let seed = 0;
-  const s = String(seedKey);
-  for (let i=0;i<s.length;i++) seed += s.charCodeAt(i);
-  return 4 + (seed % 19);
-}
-
-function renderDivisionTable(state){
-  const rows = state.divisions.map(d => {
-    const leads = state.leads.filter(l => l.divisionId === d.id);
-    const qualified = leads.filter(l => l.tier === "Hot" || l.tier === "Warm").length;
-    const rate = leads.length ? Math.round((qualified/leads.length)*100) : 0;
-    return { d, count: leads.length, rate };
-  });
-  return `
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Division</th><th>Leads</th><th>Qual. Rate</th><th>Clients</th><th>ARR</th></tr></thead>
-        <tbody>
-          ${rows.map(r => `
-            <tr class="row-hover">
-              <td>${r.d.icon} <b>${r.d.name}</b></td>
-              <td>${r.count}</td>
-              <td>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <div class="progress" style="width:60px;"><div style="width:${r.rate}%;background:${r.d.color}"></div></div>
-                  <span class="muted">${r.rate}%</span>
-                </div>
-              </td>
-              <td>${r.d.activeClients}</td>
-              <td>${fmt$(r.d.arr)}</td>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th><th>Contact</th><th>Division</th><th>Signal</th><th>Score</th><th>Tier</th><th>Status</th><th>Verified</th><th></th>
             </tr>
-          `).join("")}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${leads.slice(0,80).map(l => leadRow(l)).join("") || `<tr><td colspan="9"><div class="empty">No leads match these filters.</div></td></tr>`}
+          </tbody>
+        </table>
+      </div>
+      ${leads.length > 80 ? `<div class="muted" style="margin-top:10px;font-size:12px;">Showing top 80 of ${leads.length} leads by score.</div>` : ""}
     </div>
+  `;
+
+  document.getElementById("leadSearch").addEventListener("input", (e) => { leadsSearch = e.target.value; renderLeads(root, Store.get()); });
+  document.querySelectorAll("#tierChips [data-tier]").forEach(c => c.addEventListener("click", () => { leadsFilterTier = c.getAttribute("data-tier"); renderLeads(root, Store.get()); }));
+  document.querySelectorAll("#signalChips [data-signal]").forEach(c => c.addEventListener("click", () => { leadsFilterSignal = c.getAttribute("data-signal"); renderLeads(root, Store.get()); }));
+
+  document.getElementById("discoveryBtn").addEventListener("click", () => {
+    const targetDiv = divFilter === "all" ? state.divisions[randInt(0,state.divisions.length-1)].id : divFilter;
+    Store.runLeadDiscovery(targetDiv);
+  });
+  document.getElementById("qualifyBtn").addEventListener("click", () => {
+    const targetDiv = divFilter === "all" ? state.divisions[randInt(0,state.divisions.length-1)].id : divFilter;
+    Store.runQualificationPass(targetDiv);
+  });
+
+  root.querySelectorAll("[data-dispute]").forEach(btn => {
+    btn.addEventListener("click", () => openDisputeModal(btn.getAttribute("data-dispute")));
+  });
+  root.querySelectorAll("[data-view-lead]").forEach(el => {
+    el.addEventListener("click", () => openLeadDetailModal(el.getAttribute("data-view-lead")));
+  });
+  root.querySelectorAll("[data-advance]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const leadId = btn.getAttribute("data-advance");
+      const lead = Store.get().leads.find(l => l.id === leadId);
+      const idx = LEAD_STATUSES.indexOf(lead.status);
+      if (idx < LEAD_STATUSES.length - 1) Store.moveLead(leadId, LEAD_STATUSES[idx+1]);
+    });
+  });
+}
+
+function leadRow(l) {
+  const signalIcon = { "static-icp":"📇", "intent-signal":"📡", "trigger-event":"⚡" }[l.signalType];
+  const signalLabel = { "static-icp":"Static ICP", "intent-signal":"Intent Signal", "trigger-event":"Trigger Event" }[l.signalType];
+  const nextIdx = LEAD_STATUSES.indexOf(l.status);
+  const hasNext = nextIdx < LEAD_STATUSES.length - 1;
+  return `
+    <tr class="row-hover">
+      <td>
+        <button class="link-btn" data-view-lead="${l.id}" style="font-weight:700;font-size:13px;color:var(--text);">${escapeHtml(l.company)}</button>
+        <div class="muted" style="font-size:11px;">${timeAgo(l.createdAt)}</div>
+      </td>
+      <td>${escapeHtml(l.contactName)}<div class="muted" style="font-size:11px;">${escapeHtml(l.title)}</div></td>
+      <td>${divisionName(l.divisionId)}</td>
+      <td><span class="badge blue">${signalIcon} ${signalLabel}</span></td>
+      <td><b>${l.score}</b></td>
+      <td><span class="badge ${tierBadgeClass(l.tier)}">${l.tier}</span></td>
+      <td>
+        <button class="link-btn" ${hasNext?"":"disabled"} data-advance="${l.id}" title="Advance to next stage">${l.status}${hasNext?" →":""}</button>
+      </td>
+      <td>${l.emailVerified ? `<span class="badge green">✓ verified</span>` : `<span class="badge gray">unverified</span>`}</td>
+      <td><button class="btn ghost sm" data-dispute="${l.id}">Dispute</button></td>
+    </tr>
   `;
 }
 
-function buildLeaderboard(state, divFilter){
-  const divisions = divFilter === "all" ? state.divisions : state.divisions.filter(d=>d.id===divFilter);
-  const reps = ["Jamie Cole","Priya Raman","Marcus Diaz","Elena Volkov","Sam O'Neill","Tasha Reed"];
-  return divisions.slice(0, 5).map((d,i) => {
-    const rep = reps[i % reps.length];
-    const sourced = state.leads.filter(l=>l.divisionId===d.id).length;
-    return {
-      name: rep, division: d.name,
-      sourced,
-      meetings: Math.max(1, Math.round(sourced * 0.11)),
-      responseRate: 8 + (sourced % 14),
-    };
-  }).sort((a,b) => b.sourced - a.sourced);
+function openLeadDetailModal(leadId) {
+  const lead = Store.get().leads.find(l => l.id === leadId);
+  if (!lead) return;
+
+  const html = `
+    <h2>${escapeHtml(lead.contactName)}</h2>
+    <div class="modal-sub">${escapeHtml(lead.title)} at ${escapeHtml(lead.company)} · ${divisionName(lead.divisionId)}</div>
+    <div id="leadDetailBody"></div>
+  `;
+  const backdrop = openModal(html, (bd) => renderLeadDetailBody(bd, leadId));
 }
 
-function renderAgentFeed(state, divFilter){
-  // Activity log is firm-wide (not tagged per-division in the schema), so it
-  // always shows the most recent real actions regardless of the division filter.
-  const items = state.agentLog.slice(0, 10);
-  if (!items.length) return `<div class="empty">No agent activity yet — run a lead search or draft an outreach email to see it here.</div>`;
-  return `
-    <div class="feed">
-      ${items.map(l => `
-        <div class="feed-item">
-          <div class="feed-ic">${l.icon}</div>
-          <div class="feed-body">
-            <div class="txt"><b>${l.agentName}</b> ${l.text}</div>
-            <div class="time">${timeAgo(l.timestamp)}</div>
-          </div>
+async function renderLeadDetailBody(backdrop, leadId) {
+  const lead = Store.get().leads.find(l => l.id === leadId);
+  if (!lead) { backdrop.remove(); return; }
+
+  const body = backdrop.querySelector("#leadDetailBody");
+  body.innerHTML = `<div class="empty" style="padding:20px;font-size:12px;">Loading…</div>`;
+
+  let messages = [];
+  try {
+    const raw = await Store.listOutreachForLead(leadId);
+    messages = raw.map(m => ({
+      id: m.id, subject: m.subject, body: m.body, status: m.status,
+      sentAt: m.sent_at, createdAt: m.created_at,
+    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } catch (e) { /* Store.listOutreachForLead already toasts the error */ }
+
+  const s = lead.subscores;
+  body.innerHTML = `
+    <div class="stat-row" style="margin:14px 0;">
+      <div class="stat"><div class="n">${lead.score}</div><div class="l">Score</div></div>
+      <div class="stat"><div class="n"><span class="badge ${tierBadgeClass(lead.tier)}">${lead.tier}</span></div><div class="l">Tier</div></div>
+      <div class="stat"><div class="n">${lead.emailVerified?"✓":"—"}</div><div class="l">Email verified</div></div>
+    </div>
+    <div class="card" style="margin-bottom:14px;background:var(--panel-2);">
+      <div class="card-head"><h3>Score breakdown</h3><span class="hint">deterministic — weights × subscores, auditable</span></div>
+      ${["icpFit","intentSignal","seniority","engagement"].map(k => `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;">
+          <span style="width:90px;color:var(--text-dim);">${{icpFit:"ICP Fit",intentSignal:"Intent Signal",seniority:"Seniority",engagement:"Engagement"}[k]}</span>
+          <div class="progress" style="flex:1;"><div style="width:${s[k]}%;"></div></div>
+          <span style="width:30px;text-align:right;">${s[k]}</span>
         </div>
       `).join("")}
     </div>
+    <div class="card" style="margin-bottom:14px;background:var(--panel-2);">
+      <div class="card-head"><h3>AI Summary</h3><span class="hint">references only fields on this record</span></div>
+      <div class="muted" style="font-size:12.5px;line-height:1.6;">${escapeHtml(lead.scoreRationale || "")}</div>
+      <button class="btn secondary sm" id="rescoreBtn" style="margin-top:12px;">🎯 Re-score with latest signals</button>
+    </div>
+    <div class="card" style="background:var(--panel-2);">
+      <div class="card-head"><h3>Outreach</h3><span class="hint">${escapeHtml(lead.email)}</span></div>
+      <button class="btn sm" id="draftBtn" style="margin-bottom:12px;">✉️ Draft outreach email</button>
+      <div id="outreachList">
+        ${messages.length ? messages.map(m => outreachMessageBlock(m)).join("") : `<div class="empty" style="padding:14px;font-size:12px;">No outreach yet for this contact.</div>`}
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="closeBtn">Close</button>
+    </div>
   `;
+
+  body.querySelector("#closeBtn").addEventListener("click", () => backdrop.remove());
+  body.querySelector("#rescoreBtn").addEventListener("click", async (e) => {
+    e.target.disabled = true; e.target.textContent = "Re-scoring…";
+    try { await Store.rescoreOneLead(leadId); } catch (err) { /* toasted already */ }
+    await renderLeadDetailBody(backdrop, leadId);
+  });
+  body.querySelector("#draftBtn").addEventListener("click", () => openDraftComposer(backdrop, leadId));
+  body.querySelectorAll("[data-send-msg]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true; btn.textContent = "Sending…";
+      await Store.sendOutreach(btn.getAttribute("data-send-msg"));
+      await renderLeadDetailBody(backdrop, leadId);
+    });
+  });
+}
+
+function outreachMessageBlock(m) {
+  const statusClass = { draft:"gray", sent:"blue", opened:"warm", replied:"green", bounced:"red" }[m.status] || "gray";
+  return `
+    <div style="border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <b style="font-size:12.5px;">${escapeHtml(m.subject)}</b>
+        <span class="badge ${statusClass}">${m.status}</span>
+      </div>
+      <div class="muted" style="font-size:11.5px;white-space:pre-line;max-height:80px;overflow-y:auto;">${escapeHtml(m.body)}</div>
+      <div class="muted" style="font-size:10.5px;margin-top:6px;">${m.sentAt ? "Sent " + timeAgo(m.sentAt) : "Drafted " + timeAgo(m.createdAt)}</div>
+      ${m.status === "draft" ? `<button class="btn sm" data-send-msg="${m.id}" style="margin-top:8px;">Send</button>` : ""}
+    </div>
+  `;
+}
+
+function openDraftComposer(parentBackdrop, leadId) {
+  const html = `
+    <h2>Draft Outreach Email</h2>
+    <div class="modal-sub">Personalized only from verified fields on this record (name, title, company). Unsubscribe link + List-Unsubscribe header are injected automatically before send.</div>
+    <div class="field">
+      <label>What are we offering? (used once for this draft)</label>
+      <input class="input" id="offerInput" placeholder="e.g. improving pipeline quality for growth teams" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelBtn">Cancel</button>
+      <button class="btn" id="genBtn">Draft with Outreach Agent</button>
+    </div>
+  `;
+  openModal(html, (bd) => {
+    bd.querySelector("#cancelBtn").addEventListener("click", () => bd.remove());
+    bd.querySelector("#genBtn").addEventListener("click", async (e) => {
+      e.target.disabled = true; e.target.textContent = "Drafting…";
+      try {
+        await Store.draftOutreach(leadId, bd.querySelector("#offerInput").value.trim());
+        bd.remove();
+      } catch (err) {
+        e.target.disabled = false; e.target.textContent = "Draft with Outreach Agent";
+        return; // error already toasted by Store
+      }
+      await renderLeadDetailBody(parentBackdrop, leadId);
+    });
+  });
+}
+
+function openDisputeModal(leadId) {
+  const lead = Store.get().leads.find(l => l.id === leadId);
+  if (!lead) return;
+  const html = `
+    <h2>Dispute Lead</h2>
+    <div class="modal-sub">${escapeHtml(lead.company)} — ${escapeHtml(lead.contactName)}. Standard replacement guarantee: bounced, duplicate, or documented disqualification within 5 business days is replaced at no charge.</div>
+    <div class="field">
+      <label>Reason</label>
+      <select class="select" id="reasonSelect">
+        <option>Bounced / undeliverable</option>
+        <option>Confirmed duplicate</option>
+        <option>Fails documented disqualification reason</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelBtn">Cancel</button>
+      <button class="btn danger" id="fileBtn">File Dispute</button>
+    </div>
+  `;
+  openModal(html, (backdrop) => {
+    backdrop.querySelector("#cancelBtn").addEventListener("click", () => backdrop.remove());
+    backdrop.querySelector("#fileBtn").addEventListener("click", () => {
+      Store.disputeLead(leadId, backdrop.querySelector("#reasonSelect").value);
+      backdrop.remove();
+    });
+  });
 }

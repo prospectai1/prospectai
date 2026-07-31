@@ -1,35 +1,25 @@
-// Small helpers shared by every /api function.
+// GET /api/settings/team
+// POST /api/settings/team  { name, email, role }
+// PATCH /api/settings/team { userId, role }
+const { withErrorHandling, readBody, json, methodNotAllowed } = require("../_lib/http");
+const db = require("../_lib/supabase");
 
-function json(res, status, body) {
-  res.status(status).setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify(body));
-}
-
-// Wraps a handler so thrown errors become clean JSON error responses
-// instead of a raw 500 with an HTML stack trace.
-function withErrorHandling(handler) {
-  return async (req, res) => {
-    try {
-      await handler(req, res);
-    } catch (err) {
-      const status = err.statusCode || 500;
-      // eslint-disable-next-line no-console
-      console.error("API error:", err.message, err.details || "");
-      json(res, status, { error: err.message || "Internal server error" });
-    }
-  };
-}
-
-function readBody(req) {
-  // Vercel Node functions already parse JSON bodies into req.body for
-  // Content-Type: application/json, but guard for edge cases.
-  if (req.body && typeof req.body === "object") return req.body;
-  try { return JSON.parse(req.body || "{}"); } catch (e) { return {}; }
-}
-
-function methodNotAllowed(res, allowed) {
-  res.setHeader("Allow", allowed.join(", "));
-  json(res, 405, { error: `Method not allowed. Use: ${allowed.join(", ")}` });
-}
-
-module.exports = { json, withErrorHandling, readBody, methodNotAllowed };
+module.exports = withErrorHandling(async (req, res) => {
+  if (req.method === "GET") {
+    const users = await db.select("users", { order: "created_at.asc" });
+    return json(res, 200, { users });
+  }
+  if (req.method === "POST") {
+    const { name, email, role } = readBody(req);
+    if (!name || !email) return json(res, 400, { error: "name and email are required" });
+    const [user] = await db.insert("users", [{ name, email, role: role || "RESEARCHER" }]);
+    return json(res, 200, { user });
+  }
+  if (req.method === "PATCH") {
+    const { userId, role } = readBody(req);
+    if (!userId || !["SUPER_ADMIN", "SALES", "RESEARCHER"].includes(role)) return json(res, 400, { error: "userId and a valid role are required" });
+    const [user] = await db.update("users", `id=eq.${userId}`, { role });
+    return json(res, 200, { user });
+  }
+  methodNotAllowed(res, ["GET", "POST", "PATCH"]);
+});

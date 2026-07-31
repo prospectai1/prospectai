@@ -1,0 +1,81 @@
+/* Module 4 — Client Management Center: drag-and-drop Kanban pipeline */
+
+function renderPipeline(root, state) {
+  const divFilter = state.currentDivisionFilter;
+  const clients = divFilter === "all" ? state.clients : state.clients.filter(c => c.divisionId === divFilter);
+
+  root.innerHTML = `
+    <div class="muted" style="margin-bottom:14px;">Drag a client card to advance its stage. Entering "Proposal Sent" auto-triggers the Proposal Agent; "Contract Signed" auto-triggers the Project Management Agent.</div>
+    <div class="kanban" id="kanban">
+      ${CLIENT_STAGES.map(stage => kanbanColumn(stage, clients)).join("")}
+    </div>
+  `;
+
+  wireDragAndDrop(root);
+}
+
+function kanbanColumn(stage, clients) {
+  const items = clients.filter(c => c.stage === stage);
+  const totalValue = items.reduce((s,c) => s + c.contractValue, 0);
+  return `
+    <div class="kanban-col" data-stage="${stage}">
+      <div class="kanban-col-head">
+        <span>${stage}</span>
+        <span class="muted">${items.length} · ${fmt$(totalValue)}</span>
+      </div>
+      <div class="kanban-col-body" data-dropzone="${stage}">
+        ${items.map(c => clientCard(c)).join("") || `<div class="empty" style="padding:20px 10px;font-size:12px;">Empty</div>`}
+      </div>
+    </div>
+  `;
+}
+
+function clientCard(c) {
+  return `
+    <div class="kanban-card" draggable="true" data-client-id="${c.id}">
+      <div class="title">${escapeHtml(c.name)}</div>
+      <div class="chip-row" style="margin-bottom:6px;">
+        <span class="badge ${tierChipClass(c.tier)}">${c.tier}</span>
+        <span class="badge ${healthBadgeClass(c.healthBand)}">● ${c.healthBand}</span>
+      </div>
+      <div class="muted" style="font-size:11.5px;">${divisionName(c.divisionId)} · CSM ${escapeHtml(c.csm)}</div>
+      <div class="meta">
+        <span>${fmt$(c.contractValue)}</span>
+        <span>${c.leadsDelivered}/${c.slaTarget} delivered</span>
+      </div>
+    </div>
+  `;
+}
+
+function tierChipClass(tier){
+  return { Enterprise:"purple", Retainer:"blue", Performance:"warm", Subscription:"gray" }[tier] || "gray";
+}
+
+function wireDragAndDrop(root) {
+  let draggedId = null;
+
+  root.querySelectorAll(".kanban-card").forEach(card => {
+    card.addEventListener("dragstart", (e) => {
+      draggedId = card.getAttribute("data-client-id");
+      card.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", draggedId);
+    });
+    card.addEventListener("dragend", () => card.classList.remove("dragging"));
+  });
+
+  root.querySelectorAll(".kanban-col").forEach(col => {
+    col.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      col.classList.add("drag-over");
+    });
+    col.addEventListener("dragleave", () => col.classList.remove("drag-over"));
+    col.addEventListener("drop", (e) => {
+      e.preventDefault();
+      col.classList.remove("drag-over");
+      const id = e.dataTransfer.getData("text/plain") || draggedId;
+      const stage = col.getAttribute("data-stage");
+      if (id && stage) Store.moveClientStage(id, stage);
+    });
+  });
+}
