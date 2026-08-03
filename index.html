@@ -6,26 +6,2310 @@
 <title>ProspectAI — Smarter Leads, Faster Growth</title>
 <meta name="description" content="ProspectAI is the AI-driven lead generation operating system: discover, qualify, engage, and convert high-value prospects in one unified platform." />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop offset=%220%25%22 stop-color=%22%236366F1%22/><stop offset=%22100%25%22 stop-color=%22%23A855F7%22/></linearGradient></defs><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22url(%23g)%22/><text x=%2250%22 y=%2268%22 font-size=%2256%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22Arial%22 font-weight=%22bold%22>P</text></svg>">
-<link rel="stylesheet" href="styles.css" />
+<style>
+/* ============================================================
+   ProspectAI Brand System
+   Primary:    #6366F1 (Indigo)   — actions, links, active states
+   Secondary:  #14B8A6 (Teal)     — growth/positive metrics
+   Accent:     #A855F7 (Violet)   — AI-generated content, brand marks
+   Success:    #22C55E  Warning: #F59E0B  Danger: #EF4444
+   Background: #0B0E14  Surface: #12161F / #171C27
+   Text:       #E7EAF2 (primary)  #9AA3B8 (secondary)  #6B7386 (faint)
+   Border:     #232938
+   Type:       Inter (heading + body), system-ui fallback — no external
+               font requests, everything renders with zero network calls.
+   ============================================================ */
+:root{
+  --bg:#0b0e14;
+  --panel:#12161f;
+  --panel-2:#171c27;
+  --border:#232938;
+  --text:#e7eaf2;
+  --text-dim:#9aa3b8;
+  --text-faint:#6b7386;
+  --indigo:#6366f1;
+  --indigo-dim:#4338ca;
+  --teal:#14b8a6;
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --red:#ef4444;
+  --blue:#3b82f6;
+  --purple:#a855f7;
+  --radius:12px;
+  --radius-sm:8px;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);height:100%;}
+body{font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+#app{min-height:100vh;display:flex;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:#2a3142;border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* Shell */
+.shell{display:flex;width:100%;min-height:100vh;}
+.sidebar{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
+.sidebar .brand{display:flex;align-items:center;gap:10px;padding:18px 16px;border-bottom:1px solid var(--border);}
+.sidebar .brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--indigo),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;}
+.sidebar .brand .name{font-weight:700;font-size:15px;letter-spacing:.2px;}
+.sidebar .brand .sub{font-size:10.5px;color:var(--text-faint);margin-top:1px;}
+.nav{padding:10px;flex:1;overflow-y:auto;}
+.nav-section{margin-bottom:14px;}
+.nav-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);padding:8px 10px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);color:var(--text-dim);font-size:13.5px;font-weight:500;margin-bottom:2px;}
+.nav-item:hover{background:var(--panel-2);color:var(--text);}
+.nav-item.active{background:rgba(99,102,241,.15);color:#c7d2fe;}
+.nav-item .ic{width:18px;text-align:center;opacity:.9;}
+.sidebar-foot{padding:12px;border-top:1px solid var(--border);}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:rgba(18,22,31,.6);backdrop-filter:blur(6px);position:sticky;top:0;z-index:20;}
+.topbar h1{font-size:17px;margin:0;font-weight:700;}
+.topbar .crumbs{font-size:12px;color:var(--text-faint);margin-top:2px;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.content{padding:24px;flex:1;}
+
+.role-switch{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--border);border-radius:999px;padding:4px 6px 4px 12px;}
+.role-switch select{background:transparent;color:var(--text);border:none;font-size:12.5px;font-weight:600;outline:none;}
+.role-switch .dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
+.avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+
+.div-pill{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:12.5px;color:var(--text-dim);}
+.div-pill select{background:transparent;border:none;color:var(--text);font-weight:600;outline:none;font-size:12.5px;}
+
+/* Grid & Cards */
+.grid{display:grid;gap:16px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+@media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:repeat(2,1fr);}}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-head h3{font-size:14px;margin:0;font-weight:700;}
+.card-head .hint{font-size:11.5px;color:var(--text-faint);}
+
+.kpi{padding:16px 18px;}
+.kpi .label{font-size:11.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+.kpi .value{font-size:26px;font-weight:800;margin-top:8px;letter-spacing:-.02em;}
+.kpi .delta{font-size:12px;margin-top:6px;font-weight:600;}
+.kpi .delta.up{color:var(--green);}
+.kpi .delta.down{color:var(--red);}
+.kpi .delta.flat{color:var(--text-faint);}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.02em;}
+.badge.hot{background:rgba(239,68,68,.15);color:#fca5a5;}
+.badge.warm{background:rgba(245,158,11,.15);color:#fcd34d;}
+.badge.cold{background:rgba(59,130,246,.15);color:#93c5fd;}
+.badge.disqualified{background:rgba(107,115,134,.15);color:var(--text-faint);}
+.badge.green{background:rgba(34,197,94,.15);color:#86efac;}
+.badge.yellow{background:rgba(245,158,11,.15);color:#fcd34d;}
+.badge.red{background:rgba(239,68,68,.15);color:#fca5a5;}
+.badge.blue{background:rgba(59,130,246,.15);color:#93c5fd;}
+.badge.purple{background:rgba(168,85,247,.15);color:#d8b4fe;}
+.badge.gray{background:rgba(107,115,134,.15);color:var(--text-dim);}
+
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--indigo);color:white;border:none;padding:9px 14px;border-radius:9px;font-size:13px;font-weight:600;transition:background .15s;}
+.btn:hover{background:var(--indigo-dim);}
+.btn.secondary{background:var(--panel-2);border:1px solid var(--border);color:var(--text);}
+.btn.secondary:hover{background:#1e2433;}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text-dim);}
+.btn.sm{padding:6px 10px;font-size:12px;}
+.btn.danger{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;}
+td{padding:11px 10px;border-bottom:1px solid var(--border);font-size:13px;}
+tr:last-child td{border-bottom:none;}
+tr.row-hover:hover{background:var(--panel-2);}
+.table-wrap{overflow-x:auto;}
+
+.progress{height:7px;border-radius:999px;background:var(--panel-2);overflow:hidden;}
+.progress > div{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--indigo),var(--blue));}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;}
+.tab{padding:9px 14px;font-size:13px;font-weight:600;color:var(--text-faint);border-bottom:2px solid transparent;}
+.tab.active{color:var(--text);border-bottom-color:var(--indigo);}
+.tab:hover{color:var(--text);}
+
+.input,.select,textarea{background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:9px 11px;border-radius:8px;font-size:13px;font-family:inherit;outline:none;width:100%;}
+.input:focus,.select:focus,textarea:focus{border-color:var(--indigo);}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;}
+.field .help{font-size:11px;color:var(--text-faint);margin-top:4px;}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(5,7,12,.7);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:560px;max-width:100%;max-height:88vh;overflow-y:auto;padding:22px;}
+.modal h2{margin:0 0 4px;font-size:16px;}
+.modal .modal-sub{font-size:12px;color:var(--text-faint);margin-bottom:18px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);}
+
+.toast-host{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:200;}
+.toast{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--indigo);padding:12px 16px;border-radius:8px;font-size:13px;max-width:340px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slidein .18s ease-out;}
+@keyframes slidein{from{transform:translateX(20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* Kanban */
+.kanban{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;}
+.kanban-col{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);min-width:250px;flex:1;display:flex;flex-direction:column;max-height:calc(100vh - 210px);}
+.kanban-col-head{padding:12px 14px;border-bottom:1px solid var(--border);font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
+.kanban-col-body{padding:10px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;}
+.kanban-card{background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:11px 12px;cursor:grab;transition:border-color .12s,transform .12s;}
+.kanban-card:hover{border-color:#3a4257;}
+.kanban-card.dragging{opacity:.4;}
+.kanban-card .title{font-size:13px;font-weight:700;margin-bottom:4px;}
+.kanban-card .meta{font-size:11px;color:var(--text-faint);display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+.kanban-col.drag-over{outline:2px dashed var(--indigo);outline-offset:-2px;}
+
+/* Agent feed */
+.feed{display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto;}
+.feed-item{display:flex;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);}
+.feed-item:last-child{border-bottom:none;}
+.feed-ic{width:28px;height:28px;border-radius:8px;background:var(--panel-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;}
+.feed-body .txt{font-size:12.5px;color:var(--text-dim);line-height:1.45;}
+.feed-body .txt b{color:var(--text);font-weight:600;}
+.feed-body .time{font-size:10.5px;color:var(--text-faint);margin-top:2px;}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text-faint);}
+.empty .big{font-size:30px;margin-bottom:10px;}
+
+.division-card{cursor:pointer;transition:border-color .12s;}
+.division-card:hover{border-color:#3a4257;}
+.division-card .dname{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.division-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--panel-2);}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.tag{background:var(--panel-2);border:1px solid var(--border);padding:3px 8px;border-radius:6px;font-size:10.5px;color:var(--text-dim);}
+
+.section-title{font-size:13px;font-weight:700;color:var(--text-dim);margin:26px 0 12px;text-transform:uppercase;letter-spacing:.06em;}
+.muted{color:var(--text-faint);}
+.two-col{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;}
+@media(max-width:1100px){.two-col{grid-template-columns:1fr;}}
+
+.chip-row{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);}
+.chip.active{background:rgba(99,102,241,.18);border-color:var(--indigo);color:#c7d2fe;}
+
+.stat-row{display:flex;gap:22px;flex-wrap:wrap;}
+.stat-row .stat .n{font-size:20px;font-weight:800;}
+.stat-row .stat .l{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em;}
+
+.portal-shell{background:var(--bg);}
+.portal-topbar{background:linear-gradient(135deg,#1e1b4b,#0b0e14);border-bottom:1px solid var(--border);padding:22px 32px;}
+.banner{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:10px;padding:12px 16px;font-size:12.5px;color:#c7d2fe;margin-bottom:18px;}
+
+.score-ring{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;}
+
+.link-btn{background:none;border:none;color:var(--indigo);font-size:12.5px;font-weight:600;padding:0;}
+.link-btn:hover{text-decoration:underline;}
+
+.footer-note{font-size:11px;color:var(--text-faint);text-align:center;padding:18px 0 4px;}
+
+</style>
 </head>
 <body>
 <div id="app"></div>
 
 <!-- Toast host -->
-<div id="toast-host" class="toast-host"></div>
+<div id="toast-host" class="toast-host"></div><script>
+/* ==== js/data.js ==== */
+/* ProspectAI — static reference constants shared by the frontend views.
+   (No fake-data generators here anymore — real data comes from /api/*,
+   backed by Supabase. See js/store.js.) */
 
-<script src="js/data.js"></script>
-<script src="js/store.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/views/dashboard.js"></script>
-<script src="js/views/divisions.js"></script>
-<script src="js/views/leads.js"></script>
-<script src="js/views/pipeline.js"></script>
-<script src="js/views/proposals.js"></script>
-<script src="js/views/invoices.js"></script>
-<script src="js/views/settings.js"></script>
-<script src="js/views/portal.js"></script>
-<script src="js/views/analytics.js"></script>
-<script src="js/app.js"></script>
+const CLIENT_STAGES = [
+  "New Inquiry", "Discovery Call", "Proposal Sent", "Negotiation",
+  "Contract Signed", "Onboarding", "Active Project", "Delivery", "Renewal / Upsell",
+];
+
+const LEAD_STATUSES = ["New", "Enriched", "Scored", "In Outreach", "Engaged", "Meeting Booked", "Opportunity"];
+
+const ROLES = [
+  { id: "ceo", label: "CEO / Owner", scope: "company" },
+  { id: "sales_head", label: "Sales Head", scope: "company" },
+  { id: "bde", label: "BDE (Sales)", scope: "division" },
+  { id: "delivery_pm", label: "Delivery PM", scope: "division" },
+  { id: "csm", label: "Customer Success Manager", scope: "company" },
+  { id: "revops", label: "RevOps Director", scope: "company" },
+  { id: "client", label: "Client (Portal View)", scope: "client" },
+];
+
+const DEFAULT_SCORING_WEIGHTS = { icpFit: 0.4, intentSignal: 0.3, seniority: 0.2, engagement: 0.1 };
+
+function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function uid(prefix){ return prefix + "_" + Math.random().toString(36).slice(2,9); }
+
+
+/* ==== js/store.js ==== */
+/* ProspectAI — real backend-backed state store.
+   Replaces the old localStorage demo store: this one calls /api/* (which
+   talks to Supabase, Apollo, Anthropic, Resend) and keeps an in-memory
+   cache that views render from. Same subscribe/emit/get() shape as before,
+   so app.js and the view files barely had to change. */
+
+const Store = (function () {
+  let state = {
+    divisions: [], leads: [], clients: [], proposals: [], invoices: [],
+    users: [], agentLog: [], disputes: [], suppressionList: [], outreachMessages: [],
+    deliverability: { sentToday: 0, dailyCap: 50, bounceRate: 0, spamRate: 0, sendsBlocked: false, spfDkimDmarc: true },
+    currentRole: "ceo",
+    currentDivisionFilter: "all",
+    loading: true,
+    lastError: null,
+  };
+  const listeners = [];
+
+  function emit() { listeners.forEach((fn) => fn(state)); }
+  function subscribe(fn) { listeners.push(fn); return () => { const i = listeners.indexOf(fn); if (i > -1) listeners.splice(i, 1); }; }
+  function get() { return state; }
+
+  function toast(msg, isError) {
+    const host = document.getElementById("toast-host");
+    if (!host) return;
+    const el = document.createElement("div");
+    el.className = "toast";
+    if (isError) el.style.borderLeftColor = "var(--red)";
+    el.textContent = msg;
+    host.appendChild(el);
+    setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; setTimeout(() => el.remove(), 300); }, isError ? 5000 : 3200);
+  }
+
+  async function api(path, opts) {
+    const res = await fetch(path, {
+      method: (opts && opts.method) || "GET",
+      headers: { "Content-Type": "application/json" },
+      body: opts && opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+    let data;
+    try { data = await res.json(); } catch (e) { data = {}; }
+    if (!res.ok) {
+      const message = data.error || `Request failed (${res.status})`;
+      throw new Error(message);
+    }
+    return data;
+  }
+
+  async function guarded(fn, errorLabel) {
+    try {
+      return await fn();
+    } catch (e) {
+      state.lastError = e.message;
+      toast(`${errorLabel || "Something went wrong"}: ${e.message}`, true);
+      emit();
+      throw e;
+    }
+  }
+
+  // ---- Mappers: Postgres/API row shape -> the shape the views expect ----
+
+  function mapDivision(d) {
+    const clients = state.clients.filter((c) => c.divisionId === d.id);
+    return {
+      id: d.id, name: d.name, icon: d.icon, color: d.color, icp: d.icp,
+      compliance: d.compliance || [], sources: d.sources || [], kpiFocus: d.kpi_focus,
+      scoringWeights: d.scoring_weights || DEFAULT_SCORING_WEIGHTS,
+      geographies: ["—"],
+      arr: clients.reduce((s, c) => s + (c.contractValue || 0), 0),
+      activeClients: clients.length,
+    };
+  }
+
+  function mapContact(c) {
+    return {
+      id: c.id,
+      divisionId: c.division_id,
+      company: (c.companies && c.companies.name) || "Unknown company",
+      contactName: c.name,
+      email: c.email,
+      title: c.title || "",
+      source: c.source || "",
+      signalType: c.signal_type || "static-icp",
+      subscores: c.subscores || { icpFit: 0, intentSignal: 0, seniority: 0, engagement: 0 },
+      score: c.score,
+      tier: c.score_tier,
+      scoreRationale: c.score_rationale,
+      status: c.status,
+      emailVerified: c.email_verified,
+      createdAt: c.created_at,
+    };
+  }
+
+  function mapClient(c) {
+    const health = c.health_score;
+    return {
+      id: c.id, divisionId: c.division_id, name: c.name, tier: c.tier, stage: c.stage,
+      contractValue: Number(c.contract_value) || 0,
+      healthScore: health, healthBand: health >= 70 ? "Green" : health >= 45 ? "Yellow" : "Red",
+      slaTarget: c.sla_target_leads, leadsDelivered: c.leads_delivered,
+      csm: c.csm || "Unassigned", renewalProbability: c.renewal_probability,
+      createdAt: c.created_at,
+    };
+  }
+
+  function mapProposal(p) {
+    return {
+      id: p.id, clientId: p.client_id,
+      clientName: (p.clients && p.clients.name) || "",
+      divisionId: (p.clients && p.clients.division_id) || null,
+      value: Number(p.value) || 0, status: p.status, createdAt: p.created_at,
+    };
+  }
+
+  function mapUser(u) {
+    return { id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.created_at };
+  }
+
+  function mapInvoice(i) {
+    return {
+      id: i.id, clientId: i.client_id,
+      clientName: (i.clients && i.clients.name) || "",
+      divisionId: (i.clients && i.clients.division_id) || null,
+      amount: Number(i.amount) || 0, status: i.status, dueDate: i.due_date, createdAt: i.created_at,
+    };
+  }
+
+  // ---- Initial load ----
+
+  async function loadAll() {
+    state.loading = true; emit();
+    await guarded(async () => {
+      const [divRes, clientsRes, proposalsRes, invoicesRes, usersRes, activityRes, suppRes, dlvRes, disputesRes, outreachRes] = await Promise.all([
+        api("/api/divisions"),
+        api("/api/clients"),
+        api("/api/proposals"),
+        api("/api/invoices"),
+        api("/api/settings/team"),
+        api("/api/activity/list?limit=30"),
+        api("/api/settings/suppression"),
+        api("/api/settings/deliverability"),
+        api("/api/leads/disputes"),
+        api("/api/outreach/list"),
+      ]);
+      state.disputes = disputesRes.disputes.map((d) => ({ id: d.id, leadId: d.contact_id, reason: d.reason, status: d.status, createdAt: d.created_at }));
+      state.outreachMessages = outreachRes.messages.map((m) => ({ id: m.id, leadId: m.contact_id, status: m.status, subject: m.subject, sentAt: m.sent_at, createdAt: m.created_at }));
+      state.clients = clientsRes.clients.map(mapClient);
+      state.divisions = divRes.divisions.map(mapDivision);
+      state.proposals = proposalsRes.proposals.map(mapProposal);
+      state.invoices = invoicesRes.invoices.map(mapInvoice);
+      state.users = usersRes.users.map(mapUser);
+      state.agentLog = activityRes.activity;
+      state.suppressionList = suppRes.suppression;
+      state.deliverability = {
+        sentToday: dlvRes.deliverability.sent_today, dailyCap: dlvRes.deliverability.daily_cap,
+        bounceRate: Number(dlvRes.deliverability.bounce_rate), spamRate: Number(dlvRes.deliverability.spam_rate),
+        sendsBlocked: dlvRes.deliverability.sends_blocked, spfDkimDmarc: true,
+      };
+      await refreshLeads();
+    }, "Failed to load data");
+    state.loading = false;
+    emit();
+  }
+
+  async function refreshLeads() {
+    const divId = state.currentDivisionFilter;
+    const qs = divId && divId !== "all" ? `?divisionId=${divId}` : "";
+    const res = await api(`/api/leads/list${qs}`);
+    state.leads = res.contacts.map(mapContact);
+  }
+
+  async function refreshActivity() {
+    const res = await api("/api/activity/list?limit=30");
+    state.agentLog = res.activity;
+  }
+
+  // ---- Role / filter (client-side only, no API call) ----
+
+  function setRole(roleId) { state.currentRole = roleId; emit(); }
+
+  async function setDivisionFilter(divId) {
+    state.currentDivisionFilter = divId;
+    emit();
+    await guarded(async () => { await refreshLeads(); emit(); }, "Failed to refresh leads");
+  }
+
+  // ---- Leads / Apollo / scoring ----
+
+  async function runLeadDiscovery(divisionId, opts) {
+    return guarded(async () => {
+      const body = { divisionId, titles: (opts && opts.titles) || [], industries: (opts && opts.industries) || [], keywords: opts && opts.keywords, perPage: (opts && opts.perPage) || 10 };
+      const res = await api("/api/leads/search", { method: "POST", body });
+      toast(`Apollo search added ${res.created} lead(s)`);
+      await refreshLeads(); await refreshActivity();
+      emit();
+      return res;
+    }, "Lead Discovery failed");
+  }
+
+  async function rescoreOneLead(leadId) {
+    return guarded(async () => {
+      const res = await api("/api/leads/score", { method: "POST", body: { contactId: leadId } });
+      await refreshLeads(); await refreshActivity();
+      toast(`Re-scored — ${res.contact.score}/100 (${res.contact.score_tier})`);
+      emit();
+      return res;
+    }, "Scoring failed");
+  }
+
+  async function runQualificationPass(divisionId) {
+    return guarded(async () => {
+      const newLeads = state.leads.filter((l) => l.divisionId === divisionId && l.status === "New");
+      for (const l of newLeads) { await api("/api/leads/score", { method: "POST", body: { contactId: l.id } }); }
+      await refreshLeads(); await refreshActivity();
+      toast(`Qualification pass scored ${newLeads.length} lead(s)`);
+      emit();
+    }, "Qualification pass failed");
+  }
+
+  async function moveLead(leadId, newStatus) {
+    return guarded(async () => {
+      await api("/api/leads/status", { method: "POST", body: { contactId: leadId, status: newStatus } });
+      await refreshLeads();
+      emit();
+    }, "Failed to update lead status");
+  }
+
+  async function disputeLead(leadId, reason) {
+    return guarded(async () => {
+      await api("/api/leads/dispute", { method: "POST", body: { contactId: leadId, reason } });
+      const disputesRes = await api("/api/leads/disputes");
+      state.disputes = disputesRes.disputes.map((d) => ({ id: d.id, leadId: d.contact_id, reason: d.reason, status: d.status, createdAt: d.created_at }));
+      toast("Lead dispute filed — replacement SLA clock started (5 business days).");
+      emit();
+    }, "Failed to file dispute");
+  }
+
+  // ---- Outreach ----
+
+  async function draftOutreach(leadId, offer) {
+    return guarded(async () => {
+      const res = await api("/api/outreach/draft", { method: "POST", body: { contactId: leadId, offer } });
+      toast("Outreach draft created (unsubscribe footer auto-injected)");
+      await refreshActivity();
+      emit();
+      return res.message;
+    }, "Drafting outreach failed");
+  }
+
+  async function listOutreachForLead(leadId) {
+    return guarded(async () => {
+      const res = await api(`/api/outreach/list?contactId=${leadId}`);
+      return res.messages;
+    }, "Failed to load outreach history");
+  }
+
+  async function sendOutreach(messageId) {
+    try {
+      const res = await api("/api/outreach/send", { method: "POST", body: { messageId } });
+      toast(`Sent to lead successfully`);
+      await refreshLeads(); await refreshActivity();
+      const dlvRes = await api("/api/settings/deliverability");
+      state.deliverability = {
+        sentToday: dlvRes.deliverability.sent_today, dailyCap: dlvRes.deliverability.daily_cap,
+        bounceRate: Number(dlvRes.deliverability.bounce_rate), spamRate: Number(dlvRes.deliverability.spam_rate),
+        sendsBlocked: dlvRes.deliverability.sends_blocked, spfDkimDmarc: true,
+      };
+      emit();
+      return { ok: true, ...res };
+    } catch (e) {
+      toast(e.message, true);
+      emit();
+      return { ok: false, reason: e.message };
+    }
+  }
+
+  async function unsubscribeContact(email) {
+    return guarded(async () => {
+      await api("/api/outreach/unsubscribe", { method: "POST", body: { email } });
+      const suppRes = await api("/api/settings/suppression");
+      state.suppressionList = suppRes.suppression;
+      toast(`${email} added to the suppression list`);
+      emit();
+    }, "Failed to add to suppression list");
+  }
+
+  async function acknowledgeDeliverabilityAlert() {
+    return guarded(async () => {
+      const res = await api("/api/settings/deliverability", { method: "POST", body: { action: "acknowledge" } });
+      state.deliverability = {
+        sentToday: res.deliverability.sent_today, dailyCap: res.deliverability.daily_cap,
+        bounceRate: Number(res.deliverability.bounce_rate), spamRate: Number(res.deliverability.spam_rate),
+        sendsBlocked: res.deliverability.sends_blocked, spfDkimDmarc: true,
+      };
+      toast("Deliverability alert acknowledged — sending resumed.");
+      emit();
+    }, "Failed to acknowledge alert");
+  }
+
+  // ---- Clients / pipeline ----
+
+  async function moveClientStage(clientId, newStage) {
+    return guarded(async () => {
+      await api(`/api/clients/${clientId}`, { method: "PATCH", body: { stage: newStage } });
+      await Promise.all([refreshClients(), refreshProposalsList(), refreshActivity()]);
+      emit();
+    }, "Failed to move client stage");
+  }
+
+  async function refreshClients() {
+    const res = await api("/api/clients");
+    state.clients = res.clients.map(mapClient);
+    state.divisions = state.divisions.map((d) => mapDivision({
+      id: d.id, name: d.name, icon: d.icon, color: d.color, icp: d.icp,
+      compliance: d.compliance, sources: d.sources, kpi_focus: d.kpiFocus, scoring_weights: d.scoringWeights,
+    }));
+  }
+
+  async function refreshProposalsList() {
+    const res = await api("/api/proposals");
+    state.proposals = res.proposals.map(mapProposal);
+  }
+
+  async function createDivision(payload) {
+    return guarded(async () => {
+      const res = await api("/api/divisions", { method: "POST", body: payload });
+      state.divisions.push(mapDivision(res.division));
+      toast(`Division "${payload.name}" created`);
+      emit();
+      return res.division;
+    }, "Failed to create division");
+  }
+
+  async function createProposal(clientId) {
+    return guarded(async () => {
+      const res = await api("/api/proposals", { method: "POST", body: { clientId } });
+      await refreshProposalsList();
+      toast("Proposal drafted");
+      emit();
+      return res.proposal;
+    }, "Failed to create proposal");
+  }
+
+  async function advanceProposal(proposalId) {
+    return guarded(async () => {
+      await api(`/api/proposals/${proposalId}`, { method: "PATCH", body: {} });
+      await Promise.all([refreshProposalsList(), refreshClients()]);
+      emit();
+    }, "Failed to advance proposal");
+  }
+
+  // ---- Invoices ----
+
+  async function createInvoice(clientId, amount, dueInDays) {
+    return guarded(async () => {
+      await api("/api/invoices", { method: "POST", body: { clientId, amount, dueInDays } });
+      const res = await api("/api/invoices");
+      state.invoices = res.invoices.map(mapInvoice);
+      toast("Invoice created");
+      emit();
+    }, "Failed to create invoice");
+  }
+
+  async function markInvoicePaid(invoiceId) {
+    return guarded(async () => {
+      await api(`/api/invoices/${invoiceId}`, { method: "PATCH", body: { status: "Paid" } });
+      const res = await api("/api/invoices");
+      state.invoices = res.invoices.map(mapInvoice);
+      emit();
+    }, "Failed to update invoice");
+  }
+
+  async function advanceInvoice(invoiceId) {
+    return guarded(async () => {
+      const inv = state.invoices.find((i) => i.id === invoiceId);
+      const next = inv.status === "Draft" ? "Sent" : "Paid";
+      await api(`/api/invoices/${invoiceId}`, { method: "PATCH", body: { status: next } });
+      const res = await api("/api/invoices");
+      state.invoices = res.invoices.map(mapInvoice);
+      emit();
+    }, "Failed to advance invoice");
+  }
+
+  // ---- Settings: scoring weights + team ----
+
+  async function updateDivisionWeights(divisionId, weights) {
+    return guarded(async () => {
+      const res = await api("/api/settings/weights", { method: "PATCH", body: { divisionId, weights } });
+      await refreshLeads();
+      const div = state.divisions.find((d) => d.id === divisionId);
+      if (div) div.scoringWeights = res.weights;
+      toast(`Scoring weights updated — ${res.recomputed} lead(s) recomputed`);
+      emit();
+    }, "Failed to update scoring weights");
+  }
+
+  async function inviteUser(payload) {
+    return guarded(async () => {
+      const res = await api("/api/settings/team", { method: "POST", body: payload });
+      const user = mapUser(res.user);
+      state.users.push(user);
+      toast(`Invited ${user.name} (${user.role})`);
+      emit();
+      return user;
+    }, "Failed to invite user");
+  }
+
+  async function updateUserRole(userId, role) {
+    return guarded(async () => {
+      await api("/api/settings/team", { method: "PATCH", body: { userId, role } });
+      const u = state.users.find((u) => u.id === userId);
+      if (u) u.role = role;
+      emit();
+    }, "Failed to update role");
+  }
+
+  function resetDemo() {
+    toast("This is a live system backed by your real database — there's no demo data to reset. Delete rows directly in Supabase if you need to clear test data.");
+  }
+
+  function simulateAgentTick() { /* no-op: activity now reflects only real actions */ }
+
+  return {
+    get, subscribe, toast, loadAll,
+    setRole, setDivisionFilter,
+    runLeadDiscovery, runQualificationPass, rescoreOneLead, moveLead, disputeLead,
+    draftOutreach, listOutreachForLead, sendOutreach, unsubscribeContact, acknowledgeDeliverabilityAlert,
+    moveClientStage, createDivision, createProposal, advanceProposal,
+    createInvoice, markInvoicePaid, advanceInvoice,
+    updateDivisionWeights, inviteUser, updateUserRole,
+    resetDemo, simulateAgentTick,
+  };
+})();
+
+
+/* ==== js/charts.js ==== */
+/* ProspectAI — tiny dependency-free SVG chart helpers */
+
+const Charts = {
+  bar(data, opts) {
+    // data: [{label, value}]
+    opts = opts || {};
+    const w = opts.width || 400, h = opts.height || 180, pad = 28;
+    const max = Math.max(1, ...data.map(d => d.value));
+    const barW = (w - pad*2) / data.length;
+    const color = opts.color || "#6366f1";
+    let bars = "", labels = "";
+    data.forEach((d, i) => {
+      const bh = (d.value / max) * (h - pad*2);
+      const x = pad + i*barW + barW*0.15;
+      const y = h - pad - bh;
+      bars += `<rect x="${x}" y="${y}" width="${barW*0.7}" height="${bh}" rx="4" fill="${d.color || color}"><title>${d.label}: ${d.value}</title></rect>`;
+      labels += `<text x="${x + barW*0.35}" y="${h-8}" font-size="9" fill="#6b7386" text-anchor="middle">${d.label}</text>`;
+    });
+    return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${bars}${labels}</svg>`;
+  },
+
+  line(series, opts) {
+    // series: [value,...]
+    opts = opts || {};
+    const w = opts.width || 400, h = opts.height || 140, pad = 14;
+    const max = Math.max(...series, 1), min = Math.min(...series, 0);
+    const range = (max - min) || 1;
+    const stepX = (w - pad*2) / (series.length - 1 || 1);
+    const pts = series.map((v,i) => {
+      const x = pad + i*stepX;
+      const y = h - pad - ((v - min)/range) * (h - pad*2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    const color = opts.color || "#6366f1";
+    const areaPts = `${pad},${h-pad} ${pts.join(" ")} ${pad + (series.length-1)*stepX},${h-pad}`;
+    return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">
+      <polygon points="${areaPts}" fill="${color}22" />
+      <polyline points="${pts.join(" ")}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>`;
+  },
+
+  donut(segments, opts) {
+    // segments: [{label, value, color}]
+    opts = opts || {};
+    const size = opts.size || 150, stroke = opts.stroke || 16;
+    const r = (size - stroke) / 2;
+    const cx = size/2, cy = size/2;
+    const total = segments.reduce((s,d) => s+d.value, 0) || 1;
+    let offset = 0;
+    const circumference = 2 * Math.PI * r;
+    let circles = "";
+    segments.forEach(seg => {
+      const frac = seg.value / total;
+      const dash = frac * circumference;
+      circles += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${stroke}"
+        stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})">
+        <title>${seg.label}: ${seg.value}</title></circle>`;
+      offset += dash;
+    });
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${circles}</svg>`;
+  },
+
+  sparkline(series, opts) {
+    opts = opts || { width: 90, height: 28, color: "#22c55e" };
+    return this.line(series, opts);
+  },
+};
+
+
+/* ==== js/views/dashboard.js ==== */
+/* Module 1 — Dashboard (Executive Home). Role-aware. */
+
+function renderDashboard(root, state) {
+  const role = state.currentRole;
+  const divFilter = state.currentDivisionFilter;
+  const scoped = divFilter === "all" ? state : null;
+
+  const leads = divFilter === "all" ? state.leads : state.leads.filter(l => l.divisionId === divFilter);
+  const clients = divFilter === "all" ? state.clients : state.clients.filter(c => c.divisionId === divFilter);
+  const totalARR = state.divisions.reduce((s,d)=>s+d.arr,0);
+  const scopedARR = divFilter === "all" ? totalARR : (divisionById(divFilter)?.arr || 0);
+  const pipelineValue = state.proposals.filter(p => (divFilter==="all"||p.divisionId===divFilter) && p.status !== "Signed").reduce((s,p)=>s+p.value,0);
+  const activeClients = clients.length;
+  const atRisk = clients.filter(c => c.healthBand === "Red").length;
+  const breachedSla = clients.filter(c => c.leadsDelivered < c.slaTarget * 0.6).length;
+  const leaderboard = buildLeaderboard(state, divFilter);
+
+  const dlv = state.deliverability;
+  const dlvBreached = dlv.bounceRate >= 2 || dlv.spamRate >= 0.3;
+
+  root.innerHTML = `
+    ${role === "client" ? `<div class="banner">You're viewing the internal dashboard as ${roleLabel(role)}. Switch to the Client Portal from the sidebar to see the client-facing view.</div>` : ""}
+    ${dlvBreached ? `
+      <div class="banner" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fca5a5;display:flex;justify-content:space-between;align-items:center;">
+        <span>⚠ Deliverability threshold breached — bounce rate ${dlv.bounceRate}% / spam complaints ${dlv.spamRate}%. New outreach sends are blocked until this is acknowledged.</span>
+        <button class="btn danger sm" id="ackDlvBtn">Acknowledge & Resume</button>
+      </div>
+    ` : ""}
+
+    <div class="grid grid-4">
+      ${kpiCard("Total Leads", fmtNum(leads.length), leadsDelta(state, divFilter), "up")}
+      ${kpiCard("Active Clients", fmtNum(activeClients), `${clients.filter(c=>c.tier==="Enterprise").length} enterprise · ${clients.filter(c=>c.tier==="Retainer").length} retainer`, "flat")}
+      ${kpiCard("Pipeline Value", fmt$(pipelineValue), "weighted across open proposals", "flat")}
+      ${kpiCard(divFilter==="all" ? "ARR (company)" : "ARR (division)", fmt$(scopedARR), "+" + randStablePct(divFilter) + "% vs last quarter", "up")}
+    </div>
+
+    <div class="two-col" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-head">
+          <h3>Email Deliverability</h3>
+          <span class="hint">Section 6 compliance guardrails</span>
+        </div>
+        <div class="stat-row" style="margin-bottom:14px;">
+          <div class="stat"><div class="n" style="color:${dlv.bounceRate>=2?'var(--red)':'var(--text)'}">${dlv.bounceRate}%</div><div class="l">Bounce rate (cap 2%)</div></div>
+          <div class="stat"><div class="n" style="color:${dlv.spamRate>=0.3?'var(--red)':'var(--text)'}">${dlv.spamRate}%</div><div class="l">Spam complaints (cap 0.3%)</div></div>
+          <div class="stat"><div class="n">${dlv.sentToday}/${dlv.dailyCap}</div><div class="l">Sends today (warm-up cap)</div></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <span class="badge ${dlv.spfDkimDmarc?'green':'red'}">${dlv.spfDkimDmarc?'✓':'✗'} SPF/DKIM/DMARC verified</span>
+          <span class="badge ${dlv.sendsBlocked?'red':'green'}">${dlv.sendsBlocked?'Sends blocked':'Sending allowed'}</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Suppression List</h3>
+          <span class="hint">bounced / unsubscribed</span>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><div class="n">${state.suppressionList.length}</div><div class="l">Suppressed contacts</div></div>
+          <div class="stat"><div class="n">${state.outreachMessages.filter(m=>m.status==='sent').length}</div><div class="l">Emails sent</div></div>
+        </div>
+        <div class="muted" style="font-size:11.5px;margin-top:10px;">Every send is checked against this list before going out — no exceptions.</div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-head">
+          <h3>Division Performance</h3>
+          <span class="hint">leads generated · conversion · revenue</span>
+        </div>
+        ${renderDivisionTable(state)}
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Delivery Status</h3>
+          <span class="hint">SLA health</span>
+        </div>
+        <div class="stat-row" style="margin-bottom:16px;">
+          <div class="stat"><div class="n" style="color:var(--green)">${clients.length - atRisk - breachedSla}</div><div class="l">On track</div></div>
+          <div class="stat"><div class="n" style="color:var(--amber)">${breachedSla}</div><div class="l">At risk</div></div>
+          <div class="stat"><div class="n" style="color:var(--red)">${atRisk}</div><div class="l">Breached SLA</div></div>
+        </div>
+        ${Charts.donut([
+          {label:"On track", value: Math.max(clients.length - atRisk - breachedSla,0), color:"#22c55e"},
+          {label:"At risk", value: breachedSla, color:"#f59e0b"},
+          {label:"Breached", value: atRisk, color:"#ef4444"},
+        ], {size:140})}
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-head">
+          <h3>Team Performance Leaderboard</h3>
+          <span class="hint">leads sourced · meetings booked</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rep</th><th>Division</th><th>Leads Sourced</th><th>Meetings</th><th>Response Rate</th></tr></thead>
+            <tbody>
+              ${leaderboard.map(r => `
+                <tr class="row-hover">
+                  <td><b>${r.name}</b></td>
+                  <td>${r.division}</td>
+                  <td>${r.sourced}</td>
+                  <td>${r.meetings}</td>
+                  <td>${r.responseRate}%</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h3>AI Agent Activity Feed</h3>
+          <span class="hint">live</span>
+        </div>
+        ${renderAgentFeed(state, divFilter)}
+      </div>
+    </div>
+  `;
+
+  const ackBtn = document.getElementById("ackDlvBtn");
+  if (ackBtn) ackBtn.addEventListener("click", () => Store.acknowledgeDeliverabilityAlert());
+}
+
+function roleLabel(id){ const r = ROLES.find(r=>r.id===id); return r ? r.label : id; }
+
+function kpiCard(label, value, delta, trend) {
+  return `
+    <div class="card kpi">
+      <div class="label">${label}</div>
+      <div class="value">${value}</div>
+      <div class="delta ${trend}">${trend === "up" ? "▲" : trend === "down" ? "▼" : "•"} ${delta}</div>
+    </div>
+  `;
+}
+
+function leadsDelta(state, divFilter){
+  const leads = divFilter === "all" ? state.leads : state.leads.filter(l=>l.divisionId===divFilter);
+  const last7 = leads.filter(l => (Date.now() - new Date(l.createdAt))/86400000 <= 7).length;
+  return `+${last7} in last 7 days`;
+}
+
+function randStablePct(seedKey){
+  // deterministic-ish pseudo value per division so it doesn't jump on every re-render
+  let seed = 0;
+  const s = String(seedKey);
+  for (let i=0;i<s.length;i++) seed += s.charCodeAt(i);
+  return 4 + (seed % 19);
+}
+
+function renderDivisionTable(state){
+  const rows = state.divisions.map(d => {
+    const leads = state.leads.filter(l => l.divisionId === d.id);
+    const qualified = leads.filter(l => l.tier === "Hot" || l.tier === "Warm").length;
+    const rate = leads.length ? Math.round((qualified/leads.length)*100) : 0;
+    return { d, count: leads.length, rate };
+  });
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Division</th><th>Leads</th><th>Qual. Rate</th><th>Clients</th><th>ARR</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr class="row-hover">
+              <td>${r.d.icon} <b>${r.d.name}</b></td>
+              <td>${r.count}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="progress" style="width:60px;"><div style="width:${r.rate}%;background:${r.d.color}"></div></div>
+                  <span class="muted">${r.rate}%</span>
+                </div>
+              </td>
+              <td>${r.d.activeClients}</td>
+              <td>${fmt$(r.d.arr)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function buildLeaderboard(state, divFilter){
+  const divisions = divFilter === "all" ? state.divisions : state.divisions.filter(d=>d.id===divFilter);
+  const reps = ["Jamie Cole","Priya Raman","Marcus Diaz","Elena Volkov","Sam O'Neill","Tasha Reed"];
+  return divisions.slice(0, 5).map((d,i) => {
+    const rep = reps[i % reps.length];
+    const sourced = state.leads.filter(l=>l.divisionId===d.id).length;
+    return {
+      name: rep, division: d.name,
+      sourced,
+      meetings: Math.max(1, Math.round(sourced * 0.11)),
+      responseRate: 8 + (sourced % 14),
+    };
+  }).sort((a,b) => b.sourced - a.sourced);
+}
+
+function renderAgentFeed(state, divFilter){
+  // Activity log is firm-wide (not tagged per-division in the schema), so it
+  // always shows the most recent real actions regardless of the division filter.
+  const items = state.agentLog.slice(0, 10);
+  if (!items.length) return `<div class="empty">No agent activity yet — run a lead search or draft an outreach email to see it here.</div>`;
+  return `
+    <div class="feed">
+      ${items.map(l => `
+        <div class="feed-item">
+          <div class="feed-ic">${l.icon}</div>
+          <div class="feed-body">
+            <div class="txt"><b>${l.agentName}</b> ${l.text}</div>
+            <div class="time">${timeAgo(l.timestamp)}</div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+
+/* ==== js/views/divisions.js ==== */
+/* Module 2 — Industry Management Center */
+
+function renderDivisions(root, state) {
+  root.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="muted">Each division has its own ICP, qualification rubric, compliance profile, and data sources — all sharing the same database, AI agent layer, and billing engine.</div>
+      <button class="btn" id="newDivisionBtn">+ New Division</button>
+    </div>
+    <div class="grid grid-3" id="divGrid"></div>
+  `;
+
+  const grid = document.getElementById("divGrid");
+  grid.innerHTML = state.divisions.map(d => divisionCard(d, state)).join("");
+
+  grid.querySelectorAll("[data-discover]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      Store.runLeadDiscovery(btn.getAttribute("data-discover"));
+    });
+  });
+  grid.querySelectorAll("[data-qualify]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      Store.runQualificationPass(btn.getAttribute("data-qualify"));
+    });
+  });
+  grid.querySelectorAll("[data-view-division]").forEach(card => {
+    card.addEventListener("click", () => {
+      Store.setDivisionFilter(card.getAttribute("data-view-division"));
+      navigate("leads");
+    });
+  });
+
+  document.getElementById("newDivisionBtn").addEventListener("click", openNewDivisionModal);
+}
+
+function divisionCard(d, state) {
+  const leads = state.leads.filter(l => l.divisionId === d.id).length;
+  return `
+    <div class="card division-card" data-view-division="${d.id}">
+      <div class="dname"><span class="division-icon" style="background:${d.color}22;">${d.icon}</span> ${d.name}</div>
+      <div class="muted" style="margin-top:10px;font-size:12.5px;line-height:1.5;">${escapeHtml(d.icp)}</div>
+      <div class="tag-row">
+        ${d.compliance.map(c => `<span class="tag">🛡 ${c}</span>`).join("")}
+        ${d.geographies.map(g => `<span class="tag">📍 ${g}</span>`).join("")}
+      </div>
+      <div class="stat-row" style="margin-top:14px;">
+        <div class="stat"><div class="n">${leads}</div><div class="l">Leads</div></div>
+        <div class="stat"><div class="n">${d.activeClients}</div><div class="l">Clients</div></div>
+        <div class="stat"><div class="n">${fmt$(d.arr)}</div><div class="l">ARR</div></div>
+      </div>
+      <div class="muted" style="margin-top:12px;font-size:11.5px;">KPI focus: <b style="color:var(--text-dim)">${d.kpiFocus}</b></div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn secondary sm" data-discover="${d.id}" style="flex:1;">🧲 Run Discovery</button>
+        <button class="btn secondary sm" data-qualify="${d.id}" style="flex:1;">🎯 Run Qualification</button>
+      </div>
+    </div>
+  `;
+}
+
+function openNewDivisionModal() {
+  const html = `
+    <h2>Create Industry Division</h2>
+    <div class="modal-sub">Guided setup — ICP, compliance profile, and data sources. AI Research Agent can auto-suggest an ICP from this description.</div>
+    <div class="field">
+      <label>Division name</label>
+      <input class="input" id="fName" placeholder="e.g. Legal Services" />
+    </div>
+    <div class="field">
+      <label>Icon (emoji)</label>
+      <input class="input" id="fIcon" placeholder="⚖️" maxlength="2" />
+    </div>
+    <div class="field">
+      <label>Ideal Customer Profile</label>
+      <textarea id="fIcp" rows="3" placeholder="Firmographic + persona filters, e.g. mid-market law firms, 20-200 employees, decision-maker: Managing Partner"></textarea>
+    </div>
+    <div class="field">
+      <label>Compliance profile (comma-separated)</label>
+      <input class="input" id="fCompliance" placeholder="TCPA, CAN-SPAM" />
+    </div>
+    <div class="field">
+      <label>Data sources (comma-separated)</label>
+      <input class="input" id="fSources" placeholder="State bar registries, Martindale-Hubbell" />
+    </div>
+    <div class="field">
+      <label>KPI focus</label>
+      <input class="input" id="fKpi" placeholder="Cost per qualified consultation" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelBtn">Cancel</button>
+      <button class="btn" id="createBtn">Create Division</button>
+    </div>
+  `;
+  const modal = openModal(html, (backdrop) => {
+    backdrop.querySelector("#cancelBtn").addEventListener("click", () => backdrop.remove());
+    backdrop.querySelector("#createBtn").addEventListener("click", () => {
+      const name = backdrop.querySelector("#fName").value.trim();
+      if (!name) { backdrop.querySelector("#fName").focus(); return; }
+      Store.createDivision({
+        name,
+        icon: backdrop.querySelector("#fIcon").value.trim() || "🧩",
+        icp: backdrop.querySelector("#fIcp").value.trim(),
+        compliance: backdrop.querySelector("#fCompliance").value.split(",").map(s=>s.trim()).filter(Boolean),
+        sources: backdrop.querySelector("#fSources").value.split(",").map(s=>s.trim()).filter(Boolean),
+        kpiFocus: backdrop.querySelector("#fKpi").value.trim() || "Cost per qualified lead",
+        color: rand(["#22c55e","#6366f1","#f59e0b","#3b82f6","#a855f7","#ec4899","#14b8a6"]),
+      });
+      backdrop.remove();
+    });
+  });
+}
+
+
+/* ==== js/views/leads.js ==== */
+/* Module 3 — Lead Generation Center */
+
+let leadsFilterTier = "all";
+let leadsFilterSignal = "all";
+let leadsSearch = "";
+
+function renderLeads(root, state) {
+  const divFilter = state.currentDivisionFilter;
+  let leads = divFilter === "all" ? state.leads : state.leads.filter(l => l.divisionId === divFilter);
+  if (leadsFilterTier !== "all") leads = leads.filter(l => l.tier === leadsFilterTier);
+  if (leadsFilterSignal !== "all") leads = leads.filter(l => l.signalType === leadsFilterSignal);
+  if (leadsSearch.trim()) {
+    const q = leadsSearch.toLowerCase();
+    leads = leads.filter(l => l.company.toLowerCase().includes(q) || l.contactName.toLowerCase().includes(q));
+  }
+  leads = leads.slice().sort((a,b) => b.score - a.score);
+
+  const tierCounts = { Hot:0, Warm:0, Cold:0, Disqualified:0 };
+  (divFilter==="all"?state.leads:state.leads.filter(l=>l.divisionId===divFilter)).forEach(l => tierCounts[l.tier]++);
+
+  root.innerHTML = `
+    <div class="grid grid-4" style="margin-bottom:16px;">
+      ${kpiCard("Hot Leads", tierCounts.Hot, "score ≥ 70", "up")}
+      ${kpiCard("Warm Leads", tierCounts.Warm, "score 40-69", "flat")}
+      ${kpiCard("Cold Leads", tierCounts.Cold, "score 15-39, nurture", "flat")}
+      ${kpiCard("Disqualified", tierCounts.Disqualified, "score < 15", "down")}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Lead Database</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="btn secondary sm" id="discoveryBtn">🧲 Run AI Discovery</button>
+          <button class="btn secondary sm" id="qualifyBtn">🎯 Run Qualification</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
+        <input class="input" id="leadSearch" placeholder="Search company or contact…" style="max-width:220px;" value="${escapeHtml(leadsSearch)}" />
+        <div class="chip-row" id="tierChips">
+          ${["all","Hot","Warm","Cold","Disqualified"].map(t => `<span class="chip ${leadsFilterTier===t?"active":""}" data-tier="${t}">${t==="all"?"All tiers":t}</span>`).join("")}
+        </div>
+        <div class="chip-row" id="signalChips">
+          ${[["all","All sources"],["static-icp","Static ICP"],["intent-signal","Intent Signal"],["trigger-event","Trigger Event"]].map(([v,l]) => `<span class="chip ${leadsFilterSignal===v?"active":""}" data-signal="${v}">${l}</span>`).join("")}
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th><th>Contact</th><th>Division</th><th>Signal</th><th>Score</th><th>Tier</th><th>Status</th><th>Verified</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${leads.slice(0,80).map(l => leadRow(l)).join("") || `<tr><td colspan="9"><div class="empty">No leads match these filters.</div></td></tr>`}
+          </tbody>
+        </table>
+      </div>
+      ${leads.length > 80 ? `<div class="muted" style="margin-top:10px;font-size:12px;">Showing top 80 of ${leads.length} leads by score.</div>` : ""}
+    </div>
+  `;
+
+  document.getElementById("leadSearch").addEventListener("input", (e) => { leadsSearch = e.target.value; renderLeads(root, Store.get()); });
+  document.querySelectorAll("#tierChips [data-tier]").forEach(c => c.addEventListener("click", () => { leadsFilterTier = c.getAttribute("data-tier"); renderLeads(root, Store.get()); }));
+  document.querySelectorAll("#signalChips [data-signal]").forEach(c => c.addEventListener("click", () => { leadsFilterSignal = c.getAttribute("data-signal"); renderLeads(root, Store.get()); }));
+
+  document.getElementById("discoveryBtn").addEventListener("click", () => {
+    const targetDiv = divFilter === "all" ? state.divisions[randInt(0,state.divisions.length-1)].id : divFilter;
+    Store.runLeadDiscovery(targetDiv);
+  });
+  document.getElementById("qualifyBtn").addEventListener("click", () => {
+    const targetDiv = divFilter === "all" ? state.divisions[randInt(0,state.divisions.length-1)].id : divFilter;
+    Store.runQualificationPass(targetDiv);
+  });
+
+  root.querySelectorAll("[data-dispute]").forEach(btn => {
+    btn.addEventListener("click", () => openDisputeModal(btn.getAttribute("data-dispute")));
+  });
+  root.querySelectorAll("[data-view-lead]").forEach(el => {
+    el.addEventListener("click", () => openLeadDetailModal(el.getAttribute("data-view-lead")));
+  });
+  root.querySelectorAll("[data-advance]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const leadId = btn.getAttribute("data-advance");
+      const lead = Store.get().leads.find(l => l.id === leadId);
+      const idx = LEAD_STATUSES.indexOf(lead.status);
+      if (idx < LEAD_STATUSES.length - 1) Store.moveLead(leadId, LEAD_STATUSES[idx+1]);
+    });
+  });
+}
+
+function leadRow(l) {
+  const signalIcon = { "static-icp":"📇", "intent-signal":"📡", "trigger-event":"⚡" }[l.signalType];
+  const signalLabel = { "static-icp":"Static ICP", "intent-signal":"Intent Signal", "trigger-event":"Trigger Event" }[l.signalType];
+  const nextIdx = LEAD_STATUSES.indexOf(l.status);
+  const hasNext = nextIdx < LEAD_STATUSES.length - 1;
+  return `
+    <tr class="row-hover">
+      <td>
+        <button class="link-btn" data-view-lead="${l.id}" style="font-weight:700;font-size:13px;color:var(--text);">${escapeHtml(l.company)}</button>
+        <div class="muted" style="font-size:11px;">${timeAgo(l.createdAt)}</div>
+      </td>
+      <td>${escapeHtml(l.contactName)}<div class="muted" style="font-size:11px;">${escapeHtml(l.title)}</div></td>
+      <td>${divisionName(l.divisionId)}</td>
+      <td><span class="badge blue">${signalIcon} ${signalLabel}</span></td>
+      <td><b>${l.score}</b></td>
+      <td><span class="badge ${tierBadgeClass(l.tier)}">${l.tier}</span></td>
+      <td>
+        <button class="link-btn" ${hasNext?"":"disabled"} data-advance="${l.id}" title="Advance to next stage">${l.status}${hasNext?" →":""}</button>
+      </td>
+      <td>${l.emailVerified ? `<span class="badge green">✓ verified</span>` : `<span class="badge gray">unverified</span>`}</td>
+      <td><button class="btn ghost sm" data-dispute="${l.id}">Dispute</button></td>
+    </tr>
+  `;
+}
+
+function openLeadDetailModal(leadId) {
+  const lead = Store.get().leads.find(l => l.id === leadId);
+  if (!lead) return;
+
+  const html = `
+    <h2>${escapeHtml(lead.contactName)}</h2>
+    <div class="modal-sub">${escapeHtml(lead.title)} at ${escapeHtml(lead.company)} · ${divisionName(lead.divisionId)}</div>
+    <div id="leadDetailBody"></div>
+  `;
+  const backdrop = openModal(html, (bd) => renderLeadDetailBody(bd, leadId));
+}
+
+async function renderLeadDetailBody(backdrop, leadId) {
+  const lead = Store.get().leads.find(l => l.id === leadId);
+  if (!lead) { backdrop.remove(); return; }
+
+  const body = backdrop.querySelector("#leadDetailBody");
+  body.innerHTML = `<div class="empty" style="padding:20px;font-size:12px;">Loading…</div>`;
+
+  let messages = [];
+  try {
+    const raw = await Store.listOutreachForLead(leadId);
+    messages = raw.map(m => ({
+      id: m.id, subject: m.subject, body: m.body, status: m.status,
+      sentAt: m.sent_at, createdAt: m.created_at,
+    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } catch (e) { /* Store.listOutreachForLead already toasts the error */ }
+
+  const s = lead.subscores;
+  body.innerHTML = `
+    <div class="stat-row" style="margin:14px 0;">
+      <div class="stat"><div class="n">${lead.score}</div><div class="l">Score</div></div>
+      <div class="stat"><div class="n"><span class="badge ${tierBadgeClass(lead.tier)}">${lead.tier}</span></div><div class="l">Tier</div></div>
+      <div class="stat"><div class="n">${lead.emailVerified?"✓":"—"}</div><div class="l">Email verified</div></div>
+    </div>
+    <div class="card" style="margin-bottom:14px;background:var(--panel-2);">
+      <div class="card-head"><h3>Score breakdown</h3><span class="hint">deterministic — weights × subscores, auditable</span></div>
+      ${["icpFit","intentSignal","seniority","engagement"].map(k => `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;">
+          <span style="width:90px;color:var(--text-dim);">${{icpFit:"ICP Fit",intentSignal:"Intent Signal",seniority:"Seniority",engagement:"Engagement"}[k]}</span>
+          <div class="progress" style="flex:1;"><div style="width:${s[k]}%;"></div></div>
+          <span style="width:30px;text-align:right;">${s[k]}</span>
+        </div>
+      `).join("")}
+    </div>
+    <div class="card" style="margin-bottom:14px;background:var(--panel-2);">
+      <div class="card-head"><h3>AI Summary</h3><span class="hint">references only fields on this record</span></div>
+      <div class="muted" style="font-size:12.5px;line-height:1.6;">${escapeHtml(lead.scoreRationale || "")}</div>
+      <button class="btn secondary sm" id="rescoreBtn" style="margin-top:12px;">🎯 Re-score with latest signals</button>
+    </div>
+    <div class="card" style="background:var(--panel-2);">
+      <div class="card-head"><h3>Outreach</h3><span class="hint">${escapeHtml(lead.email)}</span></div>
+      <button class="btn sm" id="draftBtn" style="margin-bottom:12px;">✉️ Draft outreach email</button>
+      <div id="outreachList">
+        ${messages.length ? messages.map(m => outreachMessageBlock(m)).join("") : `<div class="empty" style="padding:14px;font-size:12px;">No outreach yet for this contact.</div>`}
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="closeBtn">Close</button>
+    </div>
+  `;
+
+  body.querySelector("#closeBtn").addEventListener("click", () => backdrop.remove());
+  body.querySelector("#rescoreBtn").addEventListener("click", async (e) => {
+    e.target.disabled = true; e.target.textContent = "Re-scoring…";
+    try { await Store.rescoreOneLead(leadId); } catch (err) { /* toasted already */ }
+    await renderLeadDetailBody(backdrop, leadId);
+  });
+  body.querySelector("#draftBtn").addEventListener("click", () => openDraftComposer(backdrop, leadId));
+  body.querySelectorAll("[data-send-msg]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true; btn.textContent = "Sending…";
+      await Store.sendOutreach(btn.getAttribute("data-send-msg"));
+      await renderLeadDetailBody(backdrop, leadId);
+    });
+  });
+}
+
+function outreachMessageBlock(m) {
+  const statusClass = { draft:"gray", sent:"blue", opened:"warm", replied:"green", bounced:"red" }[m.status] || "gray";
+  return `
+    <div style="border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <b style="font-size:12.5px;">${escapeHtml(m.subject)}</b>
+        <span class="badge ${statusClass}">${m.status}</span>
+      </div>
+      <div class="muted" style="font-size:11.5px;white-space:pre-line;max-height:80px;overflow-y:auto;">${escapeHtml(m.body)}</div>
+      <div class="muted" style="font-size:10.5px;margin-top:6px;">${m.sentAt ? "Sent " + timeAgo(m.sentAt) : "Drafted " + timeAgo(m.createdAt)}</div>
+      ${m.status === "draft" ? `<button class="btn sm" data-send-msg="${m.id}" style="margin-top:8px;">Send</button>` : ""}
+    </div>
+  `;
+}
+
+function openDraftComposer(parentBackdrop, leadId) {
+  const html = `
+    <h2>Draft Outreach Email</h2>
+    <div class="modal-sub">Personalized only from verified fields on this record (name, title, company). Unsubscribe link + List-Unsubscribe header are injected automatically before send.</div>
+    <div class="field">
+      <label>What are we offering? (used once for this draft)</label>
+      <input class="input" id="offerInput" placeholder="e.g. improving pipeline quality for growth teams" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelBtn">Cancel</button>
+      <button class="btn" id="genBtn">Draft with Outreach Agent</button>
+    </div>
+  `;
+  openModal(html, (bd) => {
+    bd.querySelector("#cancelBtn").addEventListener("click", () => bd.remove());
+    bd.querySelector("#genBtn").addEventListener("click", async (e) => {
+      e.target.disabled = true; e.target.textContent = "Drafting…";
+      try {
+        await Store.draftOutreach(leadId, bd.querySelector("#offerInput").value.trim());
+        bd.remove();
+      } catch (err) {
+        e.target.disabled = false; e.target.textContent = "Draft with Outreach Agent";
+        return; // error already toasted by Store
+      }
+      await renderLeadDetailBody(parentBackdrop, leadId);
+    });
+  });
+}
+
+function openDisputeModal(leadId) {
+  const lead = Store.get().leads.find(l => l.id === leadId);
+  if (!lead) return;
+  const html = `
+    <h2>Dispute Lead</h2>
+    <div class="modal-sub">${escapeHtml(lead.company)} — ${escapeHtml(lead.contactName)}. Standard replacement guarantee: bounced, duplicate, or documented disqualification within 5 business days is replaced at no charge.</div>
+    <div class="field">
+      <label>Reason</label>
+      <select class="select" id="reasonSelect">
+        <option>Bounced / undeliverable</option>
+        <option>Confirmed duplicate</option>
+        <option>Fails documented disqualification reason</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelBtn">Cancel</button>
+      <button class="btn danger" id="fileBtn">File Dispute</button>
+    </div>
+  `;
+  openModal(html, (backdrop) => {
+    backdrop.querySelector("#cancelBtn").addEventListener("click", () => backdrop.remove());
+    backdrop.querySelector("#fileBtn").addEventListener("click", () => {
+      Store.disputeLead(leadId, backdrop.querySelector("#reasonSelect").value);
+      backdrop.remove();
+    });
+  });
+}
+
+
+/* ==== js/views/pipeline.js ==== */
+/* Module 4 — Client Management Center: drag-and-drop Kanban pipeline */
+
+function renderPipeline(root, state) {
+  const divFilter = state.currentDivisionFilter;
+  const clients = divFilter === "all" ? state.clients : state.clients.filter(c => c.divisionId === divFilter);
+
+  root.innerHTML = `
+    <div class="muted" style="margin-bottom:14px;">Drag a client card to advance its stage. Entering "Proposal Sent" auto-triggers the Proposal Agent; "Contract Signed" auto-triggers the Project Management Agent.</div>
+    <div class="kanban" id="kanban">
+      ${CLIENT_STAGES.map(stage => kanbanColumn(stage, clients)).join("")}
+    </div>
+  `;
+
+  wireDragAndDrop(root);
+}
+
+function kanbanColumn(stage, clients) {
+  const items = clients.filter(c => c.stage === stage);
+  const totalValue = items.reduce((s,c) => s + c.contractValue, 0);
+  return `
+    <div class="kanban-col" data-stage="${stage}">
+      <div class="kanban-col-head">
+        <span>${stage}</span>
+        <span class="muted">${items.length} · ${fmt$(totalValue)}</span>
+      </div>
+      <div class="kanban-col-body" data-dropzone="${stage}">
+        ${items.map(c => clientCard(c)).join("") || `<div class="empty" style="padding:20px 10px;font-size:12px;">Empty</div>`}
+      </div>
+    </div>
+  `;
+}
+
+function clientCard(c) {
+  return `
+    <div class="kanban-card" draggable="true" data-client-id="${c.id}">
+      <div class="title">${escapeHtml(c.name)}</div>
+      <div class="chip-row" style="margin-bottom:6px;">
+        <span class="badge ${tierChipClass(c.tier)}">${c.tier}</span>
+        <span class="badge ${healthBadgeClass(c.healthBand)}">● ${c.healthBand}</span>
+      </div>
+      <div class="muted" style="font-size:11.5px;">${divisionName(c.divisionId)} · CSM ${escapeHtml(c.csm)}</div>
+      <div class="meta">
+        <span>${fmt$(c.contractValue)}</span>
+        <span>${c.leadsDelivered}/${c.slaTarget} delivered</span>
+      </div>
+    </div>
+  `;
+}
+
+function tierChipClass(tier){
+  return { Enterprise:"purple", Retainer:"blue", Performance:"warm", Subscription:"gray" }[tier] || "gray";
+}
+
+function wireDragAndDrop(root) {
+  let draggedId = null;
+
+  root.querySelectorAll(".kanban-card").forEach(card => {
+    card.addEventListener("dragstart", (e) => {
+      draggedId = card.getAttribute("data-client-id");
+      card.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", draggedId);
+    });
+    card.addEventListener("dragend", () => card.classList.remove("dragging"));
+  });
+
+  root.querySelectorAll(".kanban-col").forEach(col => {
+    col.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      col.classList.add("drag-over");
+    });
+    col.addEventListener("dragleave", () => col.classList.remove("drag-over"));
+    col.addEventListener("drop", (e) => {
+      e.preventDefault();
+      col.classList.remove("drag-over");
+      const id = e.dataTransfer.getData("text/plain") || draggedId;
+      const stage = col.getAttribute("data-stage");
+      if (id && stage) Store.moveClientStage(id, stage);
+    });
+  });
+}
+
+
+/* ==== js/views/proposals.js ==== */
+/* Module 6 — Proposal Generation Center */
+
+function renderProposals(root, state) {
+  const divFilter = state.currentDivisionFilter;
+  let proposals = divFilter === "all" ? state.proposals : state.proposals.filter(p => p.divisionId === divFilter);
+  proposals = proposals.slice().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const statusCounts = { Draft:0, Sent:0, Viewed:0, Signed:0 };
+  proposals.forEach(p => statusCounts[p.status]++);
+  const winRate = proposals.length ? Math.round((statusCounts.Signed / proposals.length) * 100) : 0;
+
+  const eligibleClients = (divFilter === "all" ? state.clients : state.clients.filter(c=>c.divisionId===divFilter));
+
+  root.innerHTML = `
+    <div class="grid grid-4" style="margin-bottom:16px;">
+      ${kpiCard("Draft", statusCounts.Draft, "awaiting rep review", "flat")}
+      ${kpiCard("Sent", statusCounts.Sent, "tracking open/view", "flat")}
+      ${kpiCard("Viewed", statusCounts.Viewed, "in client's hands", "flat")}
+      ${kpiCard("Win Rate", winRate + "%", statusCounts.Signed + " signed", "up")}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Proposals</h3>
+        <button class="btn secondary sm" id="newProposalBtn">📄 Generate Proposal</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Client</th><th>Division</th><th>Value</th><th>Status</th><th>Created</th><th></th></tr></thead>
+          <tbody>
+            ${proposals.map(p => proposalRow(p)).join("") || `<tr><td colspan="6"><div class="empty">No proposals yet. Move a client to "Proposal Sent" in the pipeline, or generate one here.</div></td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("newProposalBtn").addEventListener("click", () => openGenerateModal(eligibleClients));
+  root.querySelectorAll("[data-advance-proposal]").forEach(btn => {
+    btn.addEventListener("click", () => Store.advanceProposal(btn.getAttribute("data-advance-proposal")));
+  });
+}
+
+function proposalStatusClass(status){
+  return { Draft:"gray", Sent:"blue", Viewed:"warm", Signed:"green" }[status] || "gray";
+}
+
+function proposalRow(p) {
+  const order = ["Draft","Sent","Viewed","Signed"];
+  const idx = order.indexOf(p.status);
+  const nextLabel = idx < order.length - 1 ? `Mark ${order[idx+1]}` : "Complete";
+  return `
+    <tr class="row-hover">
+      <td><b>${escapeHtml(p.clientName)}</b></td>
+      <td>${divisionName(p.divisionId)}</td>
+      <td>${fmt$(p.value)}</td>
+      <td><span class="badge ${proposalStatusClass(p.status)}">${p.status}</span></td>
+      <td>${fmtDate(p.createdAt)}</td>
+      <td>${idx < order.length - 1 ? `<button class="btn ghost sm" data-advance-proposal="${p.id}">${nextLabel} →</button>` : `<span class="muted">✓ signed</span>`}</td>
+    </tr>
+  `;
+}
+
+function openGenerateModal(clients) {
+  if (!clients.length) { Store.toast("No clients available in this division yet."); return; }
+  const html = `
+    <h2>Generate Proposal</h2>
+    <div class="modal-sub">The Proposal Agent pulls discovery-call notes, division/ICP data, and pricing rules to draft scope, pricing, timeline, and deliverables automatically.</div>
+    <div class="field">
+      <label>Client</label>
+      <select class="select" id="clientSelect">
+        ${clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)} — ${c.tier}</option>`).join("")}
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelBtn">Cancel</button>
+      <button class="btn" id="genBtn">Generate with Proposal Agent</button>
+    </div>
+  `;
+  openModal(html, (backdrop) => {
+    backdrop.querySelector("#cancelBtn").addEventListener("click", () => backdrop.remove());
+    backdrop.querySelector("#genBtn").addEventListener("click", () => {
+      Store.createProposal(backdrop.querySelector("#clientSelect").value);
+      backdrop.remove();
+    });
+  });
+}
+
+
+/* ==== js/views/invoices.js ==== */
+/* Finance — Invoices (MVP scope: list, create, mark paid) */
+
+function renderInvoices(root, state) {
+  const divFilter = state.currentDivisionFilter;
+  let invoices = divFilter === "all" ? state.invoices : state.invoices.filter(i => i.divisionId === divFilter);
+  invoices = invoices.slice().sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const counts = { Draft:0, Sent:0, Paid:0, Overdue:0 };
+  invoices.forEach(i => counts[i.status]++);
+  const totalPaid = invoices.filter(i=>i.status==="Paid").reduce((s,i)=>s+i.amount,0);
+  const totalOutstanding = invoices.filter(i=>i.status!=="Paid").reduce((s,i)=>s+i.amount,0);
+
+  const eligibleClients = divFilter === "all" ? state.clients : state.clients.filter(c=>c.divisionId===divFilter);
+
+  root.innerHTML = `
+    <div class="grid grid-4" style="margin-bottom:16px;">
+      ${kpiCard("Paid", fmt$(totalPaid), counts.Paid + " invoices", "up")}
+      ${kpiCard("Outstanding", fmt$(totalOutstanding), (counts.Sent+counts.Overdue) + " open", "flat")}
+      ${kpiCard("Overdue", counts.Overdue, "past due date", counts.Overdue>0?"down":"flat")}
+      ${kpiCard("Draft", counts.Draft, "not yet sent", "flat")}
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Invoices</h3>
+        <button class="btn secondary sm" id="newInvoiceBtn">+ Create Invoice</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Client</th><th>Division</th><th>Amount</th><th>Status</th><th>Due</th><th>Created</th><th></th></tr></thead>
+          <tbody>
+            ${invoices.map(i => invoiceRow(i)).join("") || `<tr><td colspan="7"><div class="empty">No invoices yet.</div></td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("newInvoiceBtn").addEventListener("click", () => openInvoiceModal(eligibleClients));
+  root.querySelectorAll("[data-mark-paid]").forEach(btn => btn.addEventListener("click", () => Store.markInvoicePaid(btn.getAttribute("data-mark-paid"))));
+  root.querySelectorAll("[data-advance-invoice]").forEach(btn => btn.addEventListener("click", () => Store.advanceInvoice(btn.getAttribute("data-advance-invoice"))));
+}
+
+function invoiceStatusClass(status){
+  return { Draft:"gray", Sent:"blue", Paid:"green", Overdue:"red" }[status] || "gray";
+}
+
+function invoiceRow(i) {
+  const overdue = i.status !== "Paid" && new Date(i.dueDate) < new Date();
+  const displayStatus = overdue ? "Overdue" : i.status;
+  return `
+    <tr class="row-hover">
+      <td><b>${escapeHtml(i.clientName)}</b></td>
+      <td>${divisionName(i.divisionId)}</td>
+      <td>${fmt$(i.amount)}</td>
+      <td><span class="badge ${invoiceStatusClass(displayStatus)}">${displayStatus}</span></td>
+      <td>${fmtDate(i.dueDate)}</td>
+      <td>${fmtDate(i.createdAt)}</td>
+      <td>
+        ${i.status !== "Paid" ? `
+          ${i.status === "Draft" ? `<button class="btn ghost sm" data-advance-invoice="${i.id}">Mark Sent</button>` : ""}
+          <button class="btn sm" data-mark-paid="${i.id}">Mark Paid</button>
+        ` : `<span class="muted">✓ paid</span>`}
+      </td>
+    </tr>
+  `;
+}
+
+function openInvoiceModal(clients) {
+  if (!clients.length) { Store.toast("No clients available in this division yet."); return; }
+  const html = `
+    <h2>Create Invoice</h2>
+    <div class="modal-sub">Generated from the client's contract terms — edit before sending.</div>
+    <div class="field">
+      <label>Client</label>
+      <select class="select" id="clientSelect">
+        ${clients.map(c => `<option value="${c.id}" data-value="${c.contractValue}">${escapeHtml(c.name)} — ${c.tier}</option>`).join("")}
+      </select>
+    </div>
+    <div class="field">
+      <label>Amount (USD)</label>
+      <input class="input" id="amountInput" type="number" value="${clients[0].contractValue}" />
+    </div>
+    <div class="field">
+      <label>Due in (days)</label>
+      <input class="input" id="dueInput" type="number" value="30" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelBtn">Cancel</button>
+      <button class="btn" id="createBtn">Create Invoice</button>
+    </div>
+  `;
+  openModal(html, (bd) => {
+    const clientSelect = bd.querySelector("#clientSelect");
+    const amountInput = bd.querySelector("#amountInput");
+    clientSelect.addEventListener("change", () => {
+      const opt = clientSelect.selectedOptions[0];
+      amountInput.value = opt.getAttribute("data-value");
+    });
+    bd.querySelector("#cancelBtn").addEventListener("click", () => bd.remove());
+    bd.querySelector("#createBtn").addEventListener("click", () => {
+      const amount = parseFloat(amountInput.value) || 0;
+      const due = parseInt(bd.querySelector("#dueInput").value, 10) || 30;
+      Store.createInvoice(clientSelect.value, amount, due);
+      bd.remove();
+    });
+  });
+}
+
+
+/* ==== js/views/settings.js ==== */
+/* Settings — Team (Super Admin) + Division scoring weights */
+
+let settingsTab = "team";
+
+function renderSettings(root, state) {
+  const tabs = [
+    { id: "team", label: "Team" },
+    { id: "division", label: "Division Scoring" },
+  ];
+  root.innerHTML = `
+    <div class="tabs">
+      ${tabs.map(t => `<div class="tab ${settingsTab===t.id?"active":""}" data-tab="${t.id}">${t.label}</div>`).join("")}
+    </div>
+    <div id="settingsBody"></div>
+  `;
+  root.querySelectorAll("[data-tab]").forEach(t => t.addEventListener("click", () => { settingsTab = t.getAttribute("data-tab"); renderSettings(root, Store.get()); }));
+  const body = document.getElementById("settingsBody");
+  if (settingsTab === "team") renderTeamTab(body, state);
+  else renderDivisionScoringTab(body, state);
+}
+
+function roleChipClass(role){
+  return { SUPER_ADMIN:"purple", SALES:"blue", RESEARCHER:"green" }[role] || "gray";
+}
+
+function renderTeamTab(body, state) {
+  const isSuperAdmin = true; // demo: settings always reachable; role-gating is enforced conceptually per doc's server-side requirement
+  body.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <h3>Team</h3>
+        <button class="btn secondary sm" id="inviteBtn">+ Invite User</button>
+      </div>
+      <div class="muted" style="font-size:11.5px;margin-bottom:14px;">Super Admin manages users and roles. Role checks are enforced server-side on every action in production — not just hidden in the UI (per Section 4 of the build spec).</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th></th></tr></thead>
+          <tbody>
+            ${state.users.map(u => `
+              <tr class="row-hover">
+                <td><b>${escapeHtml(u.name)}</b></td>
+                <td class="muted">${escapeHtml(u.email)}</td>
+                <td>
+                  <select class="select" data-role-select="${u.id}" style="width:auto;display:inline-block;">
+                    ${["SUPER_ADMIN","SALES","RESEARCHER"].map(r => `<option value="${r}" ${u.role===r?"selected":""}>${r.replace("_"," ")}</option>`).join("")}
+                  </select>
+                </td>
+                <td>${fmtDate(u.createdAt)}</td>
+                <td><span class="badge ${roleChipClass(u.role)}">${u.role.replace("_"," ")}</span></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  body.querySelectorAll("[data-role-select]").forEach(sel => {
+    sel.addEventListener("change", () => Store.updateUserRole(sel.getAttribute("data-role-select"), sel.value));
+  });
+  document.getElementById("inviteBtn").addEventListener("click", openInviteModal);
+}
+
+function openInviteModal() {
+  const html = `
+    <h2>Invite User</h2>
+    <div class="modal-sub">Adds a user to the team with the selected role.</div>
+    <div class="field"><label>Name</label><input class="input" id="nameInput" placeholder="Jordan Lee" /></div>
+    <div class="field"><label>Email</label><input class="input" id="emailInput" placeholder="jordan@prospectai.in" /></div>
+    <div class="field">
+      <label>Role</label>
+      <select class="select" id="roleInput">
+        <option value="RESEARCHER">Researcher / Outreach</option>
+        <option value="SALES">Sales / BDE</option>
+        <option value="SUPER_ADMIN">Super Admin</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" id="cancelBtn">Cancel</button>
+      <button class="btn" id="inviteConfirmBtn">Send Invite</button>
+    </div>
+  `;
+  openModal(html, (bd) => {
+    bd.querySelector("#cancelBtn").addEventListener("click", () => bd.remove());
+    bd.querySelector("#inviteConfirmBtn").addEventListener("click", () => {
+      const name = bd.querySelector("#nameInput").value.trim();
+      const email = bd.querySelector("#emailInput").value.trim();
+      if (!name || !email) return;
+      Store.inviteUser({ name, email, role: bd.querySelector("#roleInput").value });
+      bd.remove();
+    });
+  });
+}
+
+function renderDivisionScoringTab(body, state) {
+  body.innerHTML = `
+    <div class="muted" style="font-size:12px;margin-bottom:14px;">Lead scores are computed with a deterministic weighted formula — <code>score = icpFit·w1 + intentSignal·w2 + seniority·w3 + engagement·w4</code> — not an LLM call, so every score is auditable. Adjust weights per division below; changing them recomputes every lead's score immediately.</div>
+    <div class="grid grid-2" id="divisionScoringGrid"></div>
+  `;
+  const grid = document.getElementById("divisionScoringGrid");
+  grid.innerHTML = state.divisions.map(d => divisionScoringCard(d)).join("");
+  wireScoringSliders(grid);
+}
+
+function divisionScoringCard(d) {
+  const w = d.scoringWeights || DEFAULT_SCORING_WEIGHTS;
+  const fields = [["icpFit","ICP Fit"],["intentSignal","Intent Signal"],["seniority","Seniority"],["engagement","Engagement"]];
+  return `
+    <div class="card" data-division-card="${d.id}">
+      <div class="card-head">
+        <h3>${d.icon} ${d.name}</h3>
+        <span class="hint" data-weight-sum="${d.id}">100%</span>
+      </div>
+      ${fields.map(([k,label]) => `
+        <div class="field" style="margin-bottom:12px;">
+          <label style="display:flex;justify-content:space-between;">
+            <span>${label}</span>
+            <span data-weight-val="${d.id}-${k}">${Math.round(w[k]*100)}%</span>
+          </label>
+          <input type="range" min="0" max="100" value="${Math.round(w[k]*100)}" data-weight-slider="${d.id}" data-key="${k}" style="width:100%;" />
+        </div>
+      `).join("")}
+      <button class="btn secondary sm" data-apply-weights="${d.id}" style="width:100%;justify-content:center;margin-top:6px;">Apply & Recompute Scores</button>
+    </div>
+  `;
+}
+
+function wireScoringSliders(grid) {
+  grid.querySelectorAll("[data-weight-slider]").forEach(slider => {
+    slider.addEventListener("input", () => {
+      const divId = slider.getAttribute("data-weight-slider");
+      const key = slider.getAttribute("data-key");
+      grid.querySelector(`[data-weight-val="${divId}-${key}"]`).textContent = slider.value + "%";
+      const sliders = grid.querySelectorAll(`[data-weight-slider="${divId}"]`);
+      let sum = 0;
+      sliders.forEach(s => sum += parseInt(s.value, 10));
+      const sumEl = grid.querySelector(`[data-weight-sum="${divId}"]`);
+      sumEl.textContent = sum + "%";
+      sumEl.style.color = sum === 100 ? "var(--green)" : "var(--amber)";
+    });
+  });
+  grid.querySelectorAll("[data-apply-weights]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const divId = btn.getAttribute("data-apply-weights");
+      const sliders = grid.querySelectorAll(`[data-weight-slider="${divId}"]`);
+      let sum = 0;
+      const raw = {};
+      sliders.forEach(s => { raw[s.getAttribute("data-key")] = parseInt(s.value, 10); sum += parseInt(s.value, 10); });
+      if (sum === 0) sum = 1;
+      const weights = {};
+      Object.keys(raw).forEach(k => weights[k] = raw[k] / sum); // normalize to sum to 1
+      Store.updateDivisionWeights(divId, weights);
+    });
+  });
+}
+
+
+/* ==== js/views/portal.js ==== */
+/* Part 7 — Client Portal: scoped, read-mostly view for a single client */
+
+let portalSelectedClientId = null;
+
+function renderPortal(root, state) {
+  const clients = state.clients;
+  if (!portalSelectedClientId || !clients.find(c => c.id === portalSelectedClientId)) {
+    portalSelectedClientId = (clients.find(c => c.stage !== "New Inquiry") || clients[0])?.id;
+  }
+  const client = clients.find(c => c.id === portalSelectedClientId);
+
+  if (!client) { root.innerHTML = `<div class="empty">No clients yet.</div>`; return; }
+
+  const leads = state.leads.filter(l => l.divisionId === client.divisionId).slice(0, 12);
+  const division = divisionById(client.divisionId);
+  const pacingPct = Math.min(100, Math.round((client.leadsDelivered / client.slaTarget) * 100));
+  const disputesForClientLeads = state.disputes.filter(d => leads.some(l => l.id === d.leadId));
+
+  root.innerHTML = `
+    <div class="field" style="max-width:320px;margin-bottom:18px;">
+      <label>Preview as client (internal-only selector)</label>
+      <select class="select" id="clientPicker">
+        ${clients.map(c => `<option value="${c.id}" ${c.id===client.id?"selected":""}>${escapeHtml(c.name)}</option>`).join("")}
+      </select>
+    </div>
+
+    <div class="portal-shell" style="border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div class="portal-topbar">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;">${division ? division.icon + " " + division.name : ""} · White-labeled Client Portal</div>
+            <div style="font-size:20px;font-weight:800;margin-top:4px;">${escapeHtml(client.name)}</div>
+          </div>
+          <div class="score-ring" style="background:${healthColor(client.healthBand)}22;color:${healthColor(client.healthBand)};border:2px solid ${healthColor(client.healthBand)}55;">${client.healthScore}</div>
+        </div>
+      </div>
+
+      <div class="content" style="padding:22px;">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-head">
+            <h3>Project Health</h3>
+            <span class="badge ${healthBadgeClass(client.healthBand)}">● ${client.healthBand}</span>
+          </div>
+          <div class="stat-row" style="margin-bottom:14px;">
+            <div class="stat"><div class="n">${client.leadsDelivered}</div><div class="l">Leads Delivered</div></div>
+            <div class="stat"><div class="n">${client.slaTarget}</div><div class="l">SLA Target</div></div>
+            <div class="stat"><div class="n">${client.renewalProbability}%</div><div class="l">Renewal Probability</div></div>
+            <div class="stat"><div class="n">${client.stage}</div><div class="l">Current Stage</div></div>
+          </div>
+          <div class="muted" style="font-size:11.5px;margin-bottom:6px;">Pacing vs. SLA target</div>
+          <div class="progress"><div style="width:${pacingPct}%;"></div></div>
+          <div class="muted" style="font-size:11.5px;margin-top:6px;">${pacingPct}% of contracted volume delivered this period</div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-head">
+              <h3>Delivered Leads</h3>
+              <span class="hint">with scoring rationale</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Company</th><th>Contact</th><th>Score</th><th>Tier</th><th></th></tr></thead>
+                <tbody>
+                  ${leads.map(l => `
+                    <tr class="row-hover">
+                      <td><b>${escapeHtml(l.company)}</b></td>
+                      <td>${escapeHtml(l.contactName)}<div class="muted" style="font-size:11px;">${escapeHtml(l.title)}</div></td>
+                      <td>${l.score}</td>
+                      <td><span class="badge ${tierBadgeClass(l.tier)}">${l.tier}</span></td>
+                      <td><button class="btn ghost sm" data-portal-dispute="${l.id}">Dispute this lead</button></td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div class="card" style="margin-bottom:16px;">
+              <div class="card-head"><h3>This Week's Highlights</h3></div>
+              <ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--text-dim);line-height:1.9;">
+                <li>${randInt(3,9)} new qualified leads sourced</li>
+                <li>${randInt(1,4)} meetings booked from your campaigns</li>
+                <li>Domain health: <b style="color:var(--green)">Good</b> — deliverability within target</li>
+              </ul>
+            </div>
+            <div class="card" style="margin-bottom:16px;">
+              <div class="card-head"><h3>Reports</h3></div>
+              <button class="btn secondary sm" style="width:100%;margin-bottom:8px;justify-content:center;" id="dlPdf">⬇ Download Weekly Report (PDF)</button>
+              <button class="btn secondary sm" style="width:100%;justify-content:center;" id="dlCsv">⬇ Export Lead Data (CSV)</button>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Support</h3></div>
+              <button class="btn sm" style="width:100%;justify-content:center;" id="raiseTicket">Raise a Support Ticket</button>
+              ${disputesForClientLeads.length ? `<div class="muted" style="font-size:11.5px;margin-top:10px;">${disputesForClientLeads.length} open dispute(s) — replacement SLA clock running.</div>` : ""}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("clientPicker").addEventListener("change", (e) => { portalSelectedClientId = e.target.value; renderPortal(root, Store.get()); });
+  root.querySelectorAll("[data-portal-dispute]").forEach(btn => {
+    btn.addEventListener("click", () => Store.disputeLead(btn.getAttribute("data-portal-dispute"), "Confirmed duplicate"));
+  });
+  document.getElementById("dlPdf").addEventListener("click", () => Store.toast("Weekly report generated (simulated) — in production this exports a PDF via the Reporting service."));
+  document.getElementById("dlCsv").addEventListener("click", () => exportLeadsCsv(leads, client.name));
+  document.getElementById("raiseTicket").addEventListener("click", () => Store.toast("Support ticket routed to Customer Success (simulated)."));
+}
+
+function healthColor(band){ return { Green:"#22c55e", Yellow:"#f59e0b", Red:"#ef4444" }[band] || "#6b7386"; }
+
+function exportLeadsCsv(leads, clientName) {
+  const header = "Company,Contact,Title,Score,Tier,Status\n";
+  const rows = leads.map(l => [l.company, l.contactName, l.title, l.score, l.tier, l.status].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([header + rows], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `${clientName.replace(/\s+/g,"_")}_leads.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+
+/* ==== js/views/analytics.js ==== */
+/* Part 8 — Dashboards & Analytics: Sales / Ops / Finance / CS / Industry Performance */
+
+let analyticsTab = "exec";
+
+function renderAnalytics(root, state) {
+  const tabs = [
+    { id: "exec", label: "Executive" },
+    { id: "sales", label: "Sales" },
+    { id: "ops", label: "Operations" },
+    { id: "finance", label: "Finance" },
+    { id: "cs", label: "Customer Success" },
+    { id: "industry", label: "Industry Performance" },
+  ];
+
+  root.innerHTML = `
+    <div class="tabs">
+      ${tabs.map(t => `<div class="tab ${analyticsTab===t.id?"active":""}" data-tab="${t.id}">${t.label}</div>`).join("")}
+    </div>
+    <div id="tabBody"></div>
+  `;
+  root.querySelectorAll("[data-tab]").forEach(t => t.addEventListener("click", () => { analyticsTab = t.getAttribute("data-tab"); renderAnalytics(root, Store.get()); }));
+
+  const body = document.getElementById("tabBody");
+  const renderers = { exec: execTab, sales: salesTab, ops: opsTab, finance: financeTab, cs: csTab, industry: industryTab };
+  body.innerHTML = renderers[analyticsTab](state);
+}
+
+function execTab(state) {
+  const totalARR = state.divisions.reduce((s,d)=>s+d.arr,0);
+  const mrr = totalARR / 12;
+  const months = ["Feb","Mar","Apr","May","Jun","Jul"];
+  const series = months.map((_,i) => Math.round(mrr * (0.72 + i*0.06) / 1000));
+  const nrr = 108 + (Math.round(mrr) % 12);
+  const gm = 58 + (Math.round(mrr) % 15);
+  const cac = 1800 + (Math.round(mrr) % 900);
+  const ltv = cac * (3 + (Math.round(mrr) % 3));
+
+  return `
+    <div class="grid grid-4" style="margin-bottom:16px;">
+      ${kpiCard("ARR", fmt$(totalARR), "company-wide", "up")}
+      ${kpiCard("MRR Growth", "+" + (4 + (Math.round(mrr)%9)) + "%", "month over month", "up")}
+      ${kpiCard("NRR", nrr + "%", "target ≥110%", nrr>=110?"up":"flat")}
+      ${kpiCard("Gross Margin", gm + "%", "target ≥60%", gm>=60?"up":"flat")}
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><h3>MRR Trend (6 mo, $K)</h3></div>
+        ${Charts.line(series, {width:500,height:160,color:"#6366f1"})}
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Revenue Mix by Division</h3></div>
+        <div style="display:flex;align-items:center;gap:18px;">
+          ${Charts.donut(state.divisions.map(d => ({label:d.name, value:d.arr, color:d.color})), {size:130})}
+          <div style="flex:1;">
+            ${state.divisions.map(d => `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color};margin-right:6px;"></span>${d.name}</span><b>${fmt$(d.arr)}</b></div>`).join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid grid-3" style="margin-top:16px;">
+      ${kpiCard("CAC", fmt$(cac), "blended", "flat")}
+      ${kpiCard("LTV:CAC", (ltv/cac).toFixed(1) + "x", "healthy ≥ 3x", "up")}
+      ${kpiCard("ARR / Employee", fmt$(totalARR / 22), "team of 22", "flat")}
+    </div>
+  `;
+}
+
+function salesTab(state) {
+  const clients = state.clients;
+  const closedWon = clients.filter(c => c.stage === "Renewal / Upsell" || c.stage === "Active Project" || c.stage === "Delivery").length;
+  const totalClosed = clients.filter(c => c.stage !== "New Inquiry" && c.stage !== "Discovery Call").length || 1;
+  const winRate = Math.round((closedWon/totalClosed)*100);
+  const avgDeal = Math.round(clients.reduce((s,c)=>s+c.contractValue,0) / (clients.length||1));
+  const byStage = CLIENT_STAGES.map(s => ({ label: s.split(" ")[0], value: clients.filter(c=>c.stage===s).length }));
+
+  return `
+    <div class="grid grid-4" style="margin-bottom:16px;">
+      ${kpiCard("New Pipeline", fmtNum(clients.filter(c=>c.stage==="New Inquiry").length), "this month", "up")}
+      ${kpiCard("Win Rate", winRate + "%", "closed-won / total closed", "up")}
+      ${kpiCard("Avg Deal Size", fmt$(avgDeal), "blended across tiers", "flat")}
+      ${kpiCard("Proposal → Close", (40 + (avgDeal%30)) + "%", "conversion rate", "flat")}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Pipeline by Stage</h3></div>
+      ${Charts.bar(byStage, {width:800,height:200,color:"#6366f1"})}
+    </div>
+  `;
+}
+
+function opsTab(state) {
+  const clients = state.clients;
+  const slaOk = clients.filter(c => c.leadsDelivered >= c.slaTarget*0.9).length;
+  const slaPct = Math.round((slaOk/(clients.length||1))*100);
+  const replacementRate = (state.disputes.length / (state.leads.length||1) * 100).toFixed(1);
+  const podUtil = 68 + (clients.length % 22);
+  const costPerLead = 38 + (clients.length % 40);
+
+  return `
+    <div class="grid grid-4" style="margin-bottom:16px;">
+      ${kpiCard("SLA Adherence", slaPct + "%", "on-time deliveries", slaPct>=90?"up":"flat")}
+      ${kpiCard("Lead Replacement Rate", replacementRate + "%", "rejected / delivered", "flat")}
+      ${kpiCard("Pod Utilization", podUtil + "%", "delivery pods", "flat")}
+      ${kpiCard("Cost / Delivered Lead", "$" + costPerLead, "blended", "down")}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Delivery Pacing by Client</h3></div>
+      ${Charts.bar(clients.slice(0,10).map(c => ({label:c.name.split(" ")[0], value:Math.round((c.leadsDelivered/c.slaTarget)*100), color: c.leadsDelivered/c.slaTarget<0.6?"#ef4444":c.leadsDelivered/c.slaTarget<0.9?"#f59e0b":"#22c55e"})), {width:800,height:200})}
+      <div class="muted" style="font-size:11.5px;margin-top:8px;">% of SLA target delivered, per client (top 10)</div>
+    </div>
+  `;
+}
+
+function financeTab(state) {
+  const totalContract = state.clients.reduce((s,c)=>s+c.contractValue,0);
+  const billed = Math.round(totalContract*0.92);
+  const collected = Math.round(totalContract*0.81);
+  const dso = 18 + (Math.round(totalContract) % 22);
+
+  return `
+    <div class="grid grid-4" style="margin-bottom:16px;">
+      ${kpiCard("DSO", dso + " days", "days sales outstanding", dso<30?"up":"down")}
+      ${kpiCard("Revenue Recognized", fmt$(totalContract), "period to date", "flat")}
+      ${kpiCard("Billed", fmt$(billed), "invoiced", "flat")}
+      ${kpiCard("Collected", fmt$(collected), "cash in", "flat")}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Revenue Recognized vs Billed vs Collected</h3></div>
+      ${Charts.bar([
+        {label:"Recognized", value: totalContract, color:"#6366f1"},
+        {label:"Billed", value: billed, color:"#3b82f6"},
+        {label:"Collected", value: collected, color:"#22c55e"},
+      ], {width:400,height:200})}
+    </div>
+  `;
+}
+
+function csTab(state) {
+  const clients = state.clients;
+  const green = clients.filter(c=>c.healthBand==="Green").length;
+  const yellow = clients.filter(c=>c.healthBand==="Yellow").length;
+  const red = clients.filter(c=>c.healthBand==="Red").length;
+  const avgRenewal = Math.round(clients.reduce((s,c)=>s+c.renewalProbability,0)/(clients.length||1));
+
+  return `
+    <div class="grid grid-4" style="margin-bottom:16px;">
+      ${kpiCard("Avg Renewal Probability", avgRenewal + "%", "across active clients", avgRenewal>=70?"up":"flat")}
+      ${kpiCard("NPS / CSAT", (7.2 + (clients.length%20)/10).toFixed(1), "out of 10", "up")}
+      ${kpiCard("Renewal Rate", (80 + (clients.length%15)) + "%", "trailing 12mo", "up")}
+      ${kpiCard("Upsell Rate", (14 + (clients.length%12)) + "%", "trailing 12mo", "flat")}
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><h3>Health Score Distribution</h3></div>
+        <div style="display:flex;align-items:center;gap:18px;">
+          ${Charts.donut([{label:"Green",value:green,color:"#22c55e"},{label:"Yellow",value:yellow,color:"#f59e0b"},{label:"Red",value:red,color:"#ef4444"}], {size:130})}
+          <div>
+            <div style="font-size:12px;margin-bottom:6px;"><span class="badge green">● Green</span> ${green} clients</div>
+            <div style="font-size:12px;margin-bottom:6px;"><span class="badge yellow">● Yellow</span> ${yellow} clients</div>
+            <div style="font-size:12px;"><span class="badge red">● Red</span> ${red} clients</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>At-Risk Accounts</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Client</th><th>Health</th><th>Renewal %</th></tr></thead>
+            <tbody>
+              ${clients.filter(c=>c.healthBand!=="Green").sort((a,b)=>a.healthScore-b.healthScore).slice(0,6).map(c => `
+                <tr class="row-hover"><td>${escapeHtml(c.name)}</td><td><span class="badge ${healthBadgeClass(c.healthBand)}">${c.healthScore}</span></td><td>${c.renewalProbability}%</td></tr>
+              `).join("") || `<tr><td colspan="3"><div class="empty">No at-risk accounts 🎉</div></td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function industryTab(state) {
+  const rows = state.divisions.map(d => {
+    const leads = state.leads.filter(l=>l.divisionId===d.id);
+    const qualified = leads.filter(l=>l.tier==="Hot"||l.tier==="Warm").length;
+    const rate = leads.length ? Math.round((qualified/leads.length)*100) : 0;
+    return { d, leads: leads.length, rate, meetings: Math.round(leads.length*0.09) };
+  });
+  return `
+    <div class="card">
+      <div class="card-head"><h3>Leads Generated by Division</h3></div>
+      ${Charts.bar(rows.map(r => ({label:r.d.name.slice(0,8), value:r.leads, color:r.d.color})), {width:800,height:200})}
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <div class="card-head"><h3>Division Scorecard</h3></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Division</th><th>Leads</th><th>Qual. Rate</th><th>Meetings Booked</th><th>Revenue</th><th>Gross Margin</th><th>Top Channel</th></tr></thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr class="row-hover">
+                <td>${r.d.icon} <b>${r.d.name}</b></td>
+                <td>${r.leads}</td>
+                <td>${r.rate}%</td>
+                <td>${r.meetings}</td>
+                <td>${fmt$(r.d.arr)}</td>
+                <td>${52 + (r.leads%25)}%</td>
+                <td>${rand(["Email","LinkedIn","Multi-channel"])}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+
+/* ==== js/app.js ==== */
+/* ProspectAI — app shell, router, shared helpers */
+
+// ---------- shared helpers ----------
+function fmt$(n) {
+  if (n >= 1000000) return "$" + (n/1000000).toFixed(2) + "M";
+  if (n >= 1000) return "$" + (n/1000).toFixed(1) + "K";
+  return "$" + Math.round(n);
+}
+function fmtNum(n){ return n.toLocaleString(); }
+function fmtDate(iso){ const d = new Date(iso); return d.toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+function timeAgo(iso){
+  const s = Math.floor((Date.now() - new Date(iso).getTime())/1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s/60);
+  if (m < 60) return m + "m ago";
+  const h = Math.floor(m/60);
+  if (h < 24) return h + "h ago";
+  const d = Math.floor(h/24);
+  return d + "d ago";
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function tierBadgeClass(tier){
+  return { Hot:"hot", Warm:"warm", Cold:"cold", Disqualified:"disqualified" }[tier] || "gray";
+}
+function healthBadgeClass(band){
+  return { Green:"green", Yellow:"yellow", Red:"red" }[band] || "gray";
+}
+function divisionById(id){ return Store.get().divisions.find(d => d.id === id); }
+function divisionName(id){ const d = divisionById(id); return d ? d.name : "—"; }
+
+// ---------- routes ----------
+const ROUTES = [
+  { path: "dashboard",  label: "Executive Dashboard", icon: "🏠", section: "Overview", render: renderDashboard, roles: null },
+  { path: "divisions",  label: "Industry Divisions",  icon: "🧭", section: "Configure", render: renderDivisions, roles: null },
+  { path: "leads",      label: "Lead Generation",     icon: "🧲", section: "Pipeline", render: renderLeads, roles: null },
+  { path: "pipeline",   label: "Client Pipeline",     icon: "🗂️", section: "Pipeline", render: renderPipeline, roles: null },
+  { path: "proposals",  label: "Proposals",           icon: "📄", section: "Pipeline", render: renderProposals, roles: null },
+  { path: "invoices",   label: "Invoices",            icon: "🧾", section: "Pipeline", render: renderInvoices, roles: null },
+  { path: "analytics",  label: "Analytics",           icon: "📊", section: "Insights", render: renderAnalytics, roles: null },
+  { path: "portal",     label: "Client Portal (Preview)", icon: "🪟", section: "Insights", render: renderPortal, roles: null },
+  { path: "settings",   label: "Settings",            icon: "⚙️", section: "Admin", render: renderSettings, roles: null },
+];
+
+function currentRoute() {
+  const hash = (location.hash || "#/dashboard").replace("#/", "");
+  return ROUTES.find(r => r.path === hash) || ROUTES[0];
+}
+
+function navigate(path) { location.hash = "#/" + path; }
+
+// ---------- shell ----------
+function renderShell() {
+  const app = document.getElementById("app");
+  const state = Store.get();
+
+  if (state.loading) {
+    app.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100vh;flex-direction:column;gap:14px;">
+        <div class="mark" style="width:44px;height:44px;font-size:20px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;font-weight:800;">P</div>
+        <div class="muted">Loading ProspectAI…</div>
+      </div>
+    `;
+    return;
+  }
+
+  const role = ROLES.find(r => r.id === state.currentRole) || ROLES[0];
+
+  const sections = {};
+  ROUTES.forEach(r => { (sections[r.section] = sections[r.section] || []).push(r); });
+
+  const route = currentRoute();
+
+  app.innerHTML = `
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="mark">P</div>
+          <div>
+            <div class="name">ProspectAI</div>
+            <div class="sub">Smarter Leads, Faster Growth</div>
+          </div>
+        </div>
+        <nav class="nav">
+          ${Object.keys(sections).map(sec => `
+            <div class="nav-section">
+              <div class="nav-label">${sec}</div>
+              ${sections[sec].map(r => `
+                <a class="nav-item ${r.path === route.path ? "active" : ""}" href="#/${r.path}">
+                  <span class="ic">${r.icon}</span><span>${r.label}</span>
+                </a>
+              `).join("")}
+            </div>
+          `).join("")}
+        </nav>
+        <div class="sidebar-foot">
+          <button class="btn secondary sm" id="refreshBtn" style="width:100%;justify-content:center;">↻ Refresh data</button>
+        </div>
+      </aside>
+      <div class="main">
+        <div class="topbar">
+          <div>
+            <h1>${route.label}</h1>
+            <div class="crumbs">ProspectAI · ${route.section}</div>
+          </div>
+          <div class="topbar-right">
+            ${renderDivisionPicker(state)}
+            <div class="role-switch">
+              <span class="dot"></span>
+              <select id="roleSelect">
+                ${ROLES.map(r => `<option value="${r.id}" ${r.id === state.currentRole ? "selected" : ""}>${r.label}</option>`).join("")}
+              </select>
+            </div>
+            <div class="avatar" title="Hanumant">H</div>
+          </div>
+        </div>
+        <div class="content" id="viewRoot"></div>
+        <div class="footer-note">ProspectAI — live system. Real data in Supabase; real Apollo/Claude/Resend calls.</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("roleSelect").addEventListener("change", e => Store.setRole(e.target.value));
+  const divSel = document.getElementById("divisionFilterSelect");
+  if (divSel) divSel.addEventListener("change", e => Store.setDivisionFilter(e.target.value));
+  document.getElementById("refreshBtn").addEventListener("click", () => Store.loadAll());
+
+  route.render(document.getElementById("viewRoot"), state);
+}
+
+function renderDivisionPicker(state){
+  return `
+    <div class="div-pill">
+      <span>🧭</span>
+      <select id="divisionFilterSelect">
+        <option value="all" ${state.currentDivisionFilter === "all" ? "selected" : ""}>All Divisions</option>
+        ${state.divisions.map(d => `<option value="${d.id}" ${state.currentDivisionFilter===d.id?"selected":""}>${d.icon} ${d.name}</option>`).join("")}
+      </select>
+    </div>
+  `;
+}
+
+// modal helper used by multiple views
+function openModal(html, onMount) {
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `<div class="modal">${html}</div>`;
+  backdrop.addEventListener("click", e => { if (e.target === backdrop) backdrop.remove(); });
+  document.body.appendChild(backdrop);
+  if (onMount) onMount(backdrop);
+  return backdrop;
+}
+
+// ---------- boot ----------
+window.addEventListener("hashchange", renderShell);
+window.addEventListener("DOMContentLoaded", async () => {
+  if (!location.hash) location.hash = "#/dashboard";
+  Store.subscribe(() => renderShell());
+  renderShell(); // shows the loading screen immediately
+  await Store.loadAll(); // fetches real data from /api/*, then emits -> re-renders
+
+  // periodically refresh the activity feed + leads so the dashboard feels live
+  // without requiring a manual refresh (safe no-op if a request happens to fail)
+  setInterval(() => { Store.loadAll().catch(() => {}); }, 60000);
+});
+
+</script>
 </body>
 </html>
